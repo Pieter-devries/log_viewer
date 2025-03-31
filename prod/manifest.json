@@ -1,6 +1,0 @@
-{
-    "id": "log_viewer", 
-    "label": "Log Viewer", 
-    "uri": "log_viewer.js", 
-    "dependencies": [] 
-}
