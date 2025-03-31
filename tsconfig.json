@@ -1,12 +1,33 @@
 {
     "compilerOptions": {
-        "target": "es5",
-        "module": "commonjs",
-        "strict": true,
-        "esModuleInterop": true,
-        "outDir": "./dist"
+        // Target environment for the compiled JavaScript
+        "target": "ES2017", // A good balance for modern browsers Looker supports
+        // How modules are handled
+        "module": "ESNext", // Use modern module system, works well with Webpack
+        "moduleResolution": "node", // Standard way to resolve modules like in Node.js
+        // Interoperability and Type Checking
+        "esModuleInterop": true, // Allows cleaner imports from CommonJS modules
+        "strict": true, // Enables all strict type-checking options (recommended)
+        "noImplicitAny": false, // Be lenient with 'any' types initially if needed
+        "skipLibCheck": true, // Skip type checking of declaration files (speeds up compilation)
+        "forceConsistentCasingInFileNames": true, // Prevent case-related errors
+        // Source Maps and Output
+        "sourceMap": true, // Generate source maps for easier debugging
+        "outDir": "./dist", // Specifies output directory for individual file compilation (Webpack overrides final bundle location)
+        "rootDir": "./src", // Specifies the root directory of input TS files
+        // Browser/DOM Types
+        "lib": [
+            "ES2017",
+            "DOM"
+        ] // Include standard ES2017 features and DOM APIs
     },
+    // Specifies which files TypeScript should compile
     "include": [
-        "src/**/*"
+        "src/**/*" // Include all files within the 'src' directory and its subdirectories
+    ],
+    // Specifies files/directories TypeScript should NOT compile
+    "exclude": [
+        "node_modules", // Always exclude node_modules
+        "dist" // Exclude the output directory
     ]
 }
