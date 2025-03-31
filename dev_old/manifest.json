@@ -1,0 +1,7 @@
+{
+    "id": "log-viewer-dev",
+    "label": "Log Viewer (Dev)",
+    "main": "log_viewer.js",
+    "options": {}, 
+    "query_response_options": {} 
+}
