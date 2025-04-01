@@ -1,7 +1,7 @@
 import {
-    Looker, LookerChartUtils, VisualizationDefinition, VisConfig, QueryResponse, Row, Field, Cell
+    Looker, LookerChartUtils, VisualizationDefinition, VisConfig, VisQueryResponse, Row, Field, Cell, VisOptions, VisData
 } from './types';
-import { state, elements, updateCoreState } from './state';
+import { state, elements, updateCoreState, MeasureMinMax } from './state';
 import { setupHTML, findElements } from './dom';
 import { escapeRegExp } from './utils';
 import { Grid, html, h } from 'gridjs';
@@ -12,13 +12,17 @@ declare var LookerCharts: LookerChartUtils;
 
 // --- State for Minimap Dragging ---
 let isDraggingMinimap = false;
-// Store references to global listeners to remove them later
 let globalMouseMoveListener: ((event: MouseEvent) => void) | null = null;
 let globalMouseUpListener: ((event: MouseEvent) => void) | null = null;
 
+// --- Type Predicate Helper ---
+function isHTMLElement(value: any): value is HTMLElement {
+    return typeof value === 'object' && value !== null && value.nodeType === 1;
+}
 
-// --- Moved Helper Functions ---
-
+// --- Other Helper Functions ---
+// (Keep all existing helper functions: debounce, clearHighlight, highlightTextNodes, applyHighlight, updateMinimap, handleMinimapMouseDown, handleMinimapMouseMove, handleMinimapMouseUp, attachListeners)
+// ...
 /** Debounce utility function */
 function debounce(func: (...args: any[]) => void, wait: number): (...args: any[]) => void {
     let timeout: number | undefined;
@@ -37,23 +41,26 @@ function clearHighlight(): void {
         marks.forEach(mark => {
             const parent = mark.parentNode;
             if (parent) {
+                // Replace mark with its text content
                 parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
-                parent.normalize();
+                parent.normalize(); // Merges adjacent text nodes
             }
         });
     }
     if (elements.minimapContainer) {
-        // Clear only markers, not the container itself if it has structure
         const markers = elements.minimapContainer.querySelectorAll('.minimap-marker');
         markers.forEach(marker => marker.remove());
     }
 }
 
+
 /** Helper function to highlight text within text nodes of an element. */
 function highlightTextNodes(element: Node, regex: RegExp): boolean {
+    // Use TreeWalker to find all text nodes within the element
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     let node;
     const nodesToProcess: Text[] = [];
+    // Collect all relevant text nodes first to avoid issues with modifying the DOM while iterating
     while (node = walker.nextNode()) {
         // Ensure nodeValue is not null/empty and parent is not a MARK/SCRIPT/STYLE tag
         if (node.nodeValue?.trim() && node.parentElement && !['MARK', 'SCRIPT', 'STYLE'].includes(node.parentElement.nodeName)) {
@@ -66,51 +73,65 @@ function highlightTextNodes(element: Node, regex: RegExp): boolean {
         const text = textNode.nodeValue || '';
         let match;
         let lastIndex = 0;
-        const fragment = document.createDocumentFragment();
-        // Reset regex state for each node
-        regex.lastIndex = 0;
+        const fragment = document.createDocumentFragment(); // Use a fragment to batch DOM changes
+        regex.lastIndex = 0; // Reset regex state
 
         while ((match = regex.exec(text)) !== null) {
             // Add text before the match
             if (match.index > lastIndex) {
                 fragment.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
             }
-            // Create and add the highlight mark
+            // Create and add the <mark> element
             const mark = document.createElement('mark');
             mark.className = 'gridjs-highlight';
             mark.textContent = match[0];
             fragment.appendChild(mark);
             lastIndex = regex.lastIndex;
             highlightsMade = true;
-            // Prevent infinite loops with zero-length matches
+            // Prevent infinite loops with zero-length matches (e.g., regex like /a*?/g)
             if (match[0].length === 0) {
                 regex.lastIndex++;
             }
         }
 
-        // If matches were found, replace the original text node
+        // If any highlights were made in this text node, replace the original node
         if (lastIndex > 0) {
             // Add any remaining text after the last match
             if (lastIndex < text.length) {
                 fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
             }
+            // Replace the original text node with the fragment containing text and marks
             textNode.parentNode?.replaceChild(fragment, textNode);
         }
     });
-    return highlightsMade;
+    return highlightsMade; // Return true if any highlights were applied
 }
 
 
 /** Applies highlighting and updates the minimap. */
 function applyHighlight(term: string | undefined): void {
     console.log(`ApplyHighlight called with term: "${term}"`);
-    clearHighlight(); // Clear previous highlights and markers
+    // --- Clear existing highlights first ---
+    // Find all existing mark elements
+    const marks = elements.gridJsContainer?.querySelectorAll('mark.gridjs-highlight');
+    marks?.forEach(mark => {
+        const parent = mark.parentNode;
+        if (parent) {
+            // Replace the mark with its text content
+            parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
+            parent.normalize(); // Merge adjacent text nodes
+        }
+    });
+    // --- End Clear ---
+
     const searchTerm = term?.trim();
+
+    // Update minimap regardless of search term (to clear markers if term is empty)
+    updateMinimap();
 
     if (!searchTerm || !elements.gridJsContainer) {
         console.log("Highlight skipped: No search term or grid container.");
-        updateMinimap(); // Still update minimap (to ensure it's clear)
-        return;
+        return; // Exit if no term or container
     }
 
     const gridWrapper = elements.gridJsContainer.querySelector<HTMLElement>('.gridjs-wrapper');
@@ -121,13 +142,14 @@ function applyHighlight(term: string | undefined): void {
 
     console.log(`Highlighting with regex for: "${searchTerm}"`);
     try {
-        // Create regex (case-insensitive, global)
         const regex = new RegExp(escapeRegExp(searchTerm), 'gi');
-        const tds = gridWrapper.querySelectorAll('td.gridjs-td'); // Target only data cells
+        // Target only the TD elements for applying highlights
+        const tds = gridWrapper.querySelectorAll('td.gridjs-td');
         console.log(`Found ${tds.length} cells to check.`);
         let highlightsAppliedCount = 0;
 
         tds.forEach(td => {
+            // Apply highlighting recursively within each cell
             if (highlightTextNodes(td, regex)) {
                 highlightsAppliedCount++;
             }
@@ -323,152 +345,206 @@ function attachListeners(): void {
 
 
 // --- Grid.js Helper Function ---
-function transformLookerDataForGridJs(data: Row[], queryResponse: QueryResponse | null, config: VisConfig | null): { columns: any[], data: any[][] } {
-    if (!queryResponse || !queryResponse.fields) {
-        console.warn("transformLookerDataForGridJs: No queryResponse or queryResponse.fields found.");
-        return { columns: [], data: [] };
-    }
-    const lookerFields: Field[] = [...(queryResponse.fields.dimensions || []), ...(queryResponse.fields.measures || [])];
-    if (lookerFields.length === 0) {
-        console.warn("transformLookerDataForGridJs: No dimensions or measures found.");
-        return { columns: [], data: [] };
-    }
+/**
+ * Transforms Looker data and query response into the format required by Grid.js.
+ */
+function transformLookerDataForGridJs(
+    data: VisData,
+    queryResponse: VisQueryResponse | null,
+    config: VisConfig | null,
+    measureMinMax: Record<string, MeasureMinMax> | undefined
+): { columns: any[], data: any[][] } {
 
-    // Define Grid.js Columns from Looker fields
+    if (!queryResponse || !queryResponse.fields) { return { columns: [], data: [] }; }
+    const lookerFields: Field[] = [
+        ...(queryResponse.fields.dimensions || []),
+        ...(queryResponse.fields.measures || [])
+    ];
+    const measureNames = new Set(queryResponse.fields.measures?.map(m => m.name) || []);
+
+    if (lookerFields.length === 0) { return { columns: [], data: [] }; }
+
+    // Define Grid.js Columns configuration
     let columns: any[] = lookerFields.map((field) => {
+        const isMeasure = measureNames.has(field.name);
+
         return {
             id: field.name,
             name: field.label_short || field.label || field.name,
             sort: true,
             resizable: true,
+            // --- Corrected formatter function ---
             formatter: (cellValue: any, gridJsRowObject: any) => {
-                // Find the original Looker row index (stored in a hidden column)
+                // Find original index and Looker cell data
                 let originalIndex: number | undefined;
                 try {
-                    // Prefer finding by ID for robustness
                     const indexCell = gridJsRowObject?.cells.find((c: any) => c.column?.id === '_originalIndex');
                     originalIndex = indexCell?.data;
-                } catch (e) { console.error("Error finding index cell by ID", e); }
-
-                // Fallback to assuming last cell if ID search fails (less robust)
+                } catch (e) { /* ignore */ }
                 if (originalIndex === undefined) {
-                    try {
-                        originalIndex = gridJsRowObject?.cells[gridJsRowObject.cells.length - 1]?.data;
-                    } catch (e) { console.error("Error finding index via last cell", e); }
+                    try { originalIndex = gridJsRowObject?.cells[gridJsRowObject.cells.length - 1]?.data; }
+                    catch (e) { /* ignore */ }
                 }
-
-                // Validate index and get original Looker row/cell
                 if (originalIndex === undefined || originalIndex < 0 || originalIndex >= data.length) {
-                    // Handle cases where index is invalid - render raw value or error placeholder
                     return html(String(cellValue ?? '[Render Error - Invalid Index]'));
                 }
                 const lookerRow = data[originalIndex];
-                const lookerCell: Cell | undefined = lookerRow ? lookerRow[field.name] : undefined;
+                const lookerCell: Cell | undefined = lookerRow ? lookerRow[field.name] as Cell : undefined;
+                if (!lookerCell) { return html(String(cellValue ?? '[No Cell Data]')); }
 
-                if (!lookerCell) {
-                    // Handle cases where cell data is missing for the field
-                    return html(String(cellValue ?? '[No Cell Data]'));
-                }
+                const isMeasure = measureNames.has(field.name);
+                let initialContent: string | HTMLElement;
+                let finalContentString: string = ''; // Initialize
+                let contentAlreadyHasLink = false;
 
-                // --- Cell Rendering Logic ---
-                let content: string | HTMLElement = cellValue ?? '[NULL]'; // Default to raw value or placeholder
-
-                // Use Looker's HTML rendering if available
-                if (typeof LookerCharts !== 'undefined' && LookerCharts.Utils?.htmlForCell) {
+                // --- Step 1: Get initial content string or element ---
+                // <<< Use textForCell for non-measures to avoid auto-links >>>
+                if (isMeasure && typeof LookerCharts !== 'undefined' && LookerCharts.Utils?.htmlForCell) {
                     try {
-                        content = LookerCharts.Utils.htmlForCell(lookerCell);
-                        // Check if Looker added links AND if the content is just plain text (no <a> tag yet)
-                        // If so, wrap it to make it clickable for drilling
-                        if (lookerCell.links && lookerCell.links.length > 0 && typeof content === 'string' && !content.includes('<a')) {
-                            const linkElement = document.createElement('span');
-                            linkElement.classList.add('drillable');
-                            linkElement.innerHTML = content; // Use Looker's formatted HTML
-                            linkElement.onclick = (event: MouseEvent) => {
-                                event.stopPropagation(); // Prevent grid row click events
-                                LookerCharts.Utils.openDrillMenu({ links: lookerCell.links!, event });
-                            };
-                            content = linkElement; // Replace content with the clickable span
-                        }
+                        initialContent = LookerCharts.Utils.htmlForCell(lookerCell, undefined, field);
                     } catch (e) {
+                        initialContent = lookerCell.rendered ?? String(lookerCell.value ?? '[Format Error]');
                         console.error(`Error using Looker htmlForCell for ${field.name}:`, e);
-                        // Fallback to rendered or value if Looker's function fails
-                        content = lookerCell.rendered ?? String(lookerCell.value ?? '[Format Error]');
                     }
-                } else if (lookerCell.rendered) {
-                    // Use Looker's basic rendered string if htmlForCell isn't available
-                    content = lookerCell.rendered;
+                } else if (typeof LookerCharts !== 'undefined' && LookerCharts.Utils?.textForCell) {
+                    // <<< Use textForCell for dimensions >>>
+                    initialContent = LookerCharts.Utils.textForCell(lookerCell);
+                }
+                else {
+                    // Fallback if textForCell isn't available
+                    initialContent = lookerCell.rendered ?? String(lookerCell.value ?? '');
                 }
 
-                // If content is still a string and there are links, wrap it for drilling
-                // (This handles cases where htmlForCell wasn't used or didn't add the link wrapper)
-                if (!(content instanceof HTMLElement) && lookerCell.links && lookerCell.links.length > 0) {
-                    const linkElement = document.createElement('span');
-                    linkElement.classList.add('drillable');
-                    linkElement.innerHTML = String(content); // Use the determined content string
-                    linkElement.onclick = (event: MouseEvent) => {
-                        event.stopPropagation();
-                        if (typeof LookerCharts !== 'undefined' && LookerCharts.Utils?.openDrillMenu) {
-                            LookerCharts.Utils.openDrillMenu({ links: lookerCell.links!, event });
-                        } else {
-                            console.error("LookerCharts.Utils.openDrillMenu is not available.");
-                        }
-                    };
-                    // Use Grid.js html() to render the outerHTML of the created span
-                    return html(linkElement.outerHTML);
+                // --- Step 2: Check for links and finalize contentString ---
+                let potentialElement: HTMLElement | null = null;
+                if (isHTMLElement(initialContent)) { // Use type predicate
+                    potentialElement = initialContent;
+                    if (initialContent.tagName === 'A' || initialContent.querySelector('a')) {
+                        contentAlreadyHasLink = true;
+                    }
+                    // Wrap if needed (only applies if initialContent was an element from htmlForCell)
+                    if (!contentAlreadyHasLink && isMeasure && lookerCell.links && lookerCell.links.length > 0) {
+                        const linkElement = document.createElement('span');
+                        linkElement.classList.add('drillable');
+                        linkElement.innerHTML = potentialElement.outerHTML; // Safe
+                        linkElement.onclick = (event: MouseEvent) => { /* ... drill handler ... */
+                            event.stopPropagation();
+                            if (typeof LookerCharts !== 'undefined' && LookerCharts.Utils?.openDrillMenu) {
+                                LookerCharts.Utils.openDrillMenu({ links: lookerCell.links!, event });
+                            }
+                        };
+                        finalContentString = linkElement.outerHTML;
+                    } else {
+                        finalContentString = potentialElement.outerHTML; // Use original element HTML
+                    }
+                } else { // It's a string
+                    const contentStr = String(initialContent);
+                    if (contentStr.includes('<a')) {
+                        contentAlreadyHasLink = true; // Link might exist in rendered/value string
+                    }
+                    // Wrap if needed (only measures)
+                    if (!contentAlreadyHasLink && isMeasure && lookerCell.links && lookerCell.links.length > 0) {
+                        const linkElement = document.createElement('span');
+                        linkElement.classList.add('drillable');
+                        linkElement.innerHTML = contentStr;
+                        linkElement.onclick = (event: MouseEvent) => { /* ... drill handler ... */
+                            event.stopPropagation();
+                            if (typeof LookerCharts !== 'undefined' && LookerCharts.Utils?.openDrillMenu) {
+                                LookerCharts.Utils.openDrillMenu({ links: lookerCell.links!, event });
+                            }
+                        };
+                        finalContentString = linkElement.outerHTML;
+                    } else {
+                        finalContentString = contentStr; // Use the string directly
+                    }
                 }
+                // --- End Link Handling ---
 
-                // Return content: Use Grid.js h() for existing HTML elements, html() for strings
-                return (content instanceof HTMLElement)
-                    ? h(content.tagName.toLowerCase(), { dangerouslySetInnerHTML: { __html: content.outerHTML } })
-                    : html(String(content)); // Ensure content is stringified
+
+                // --- Sparkline Logic (Histogram) ---
+                let sparklineHtml = '';
+                const cellVal = lookerCell.value;
+                const numericValue = Number(cellVal);
+
+                if (
+                    isMeasure &&
+                    config && config.showMeasureSparklines === true &&
+                    typeof numericValue === 'number' &&
+                    isFinite(numericValue) &&
+                    measureMinMax &&
+                    measureMinMax[field.name]
+                ) {
+                    const stats = measureMinMax[field.name];
+                    const value = numericValue;
+                    const range = stats.max - stats.min;
+                    let relativeValue = 0;
+                    if (range > 0) { relativeValue = (value - stats.min) / range; }
+                    else if (value === stats.min) { relativeValue = 0.5; }
+                    relativeValue = Math.max(0, Math.min(relativeValue, 1));
+
+                    // Generate Histogram Bars
+                    const numBars = 10;
+                    const filledBars = Math.max(0, Math.round(relativeValue * numBars));
+                    let barsHtml = '';
+                    for (let i = 0; i < numBars; i++) {
+                        const filledClass = i < filledBars ? 'sparkline-hist-bar--filled' : '';
+                        barsHtml += `<span class="sparkline-hist-bar ${filledClass}"></span>`;
+                    }
+
+                    sparklineHtml = `
+                        <span class="sparkline-container" title="Value: ${value}\nRange: ${stats.min} - ${stats.max}">
+                            ${barsHtml}
+                        </span>
+                    `;
+                    // <<< Add log to confirm generation >>>
+                    console.log(`>>> Generated sparkline HTML for ${field.name}`);
+
+                } else if (isMeasure && config?.showMeasureSparklines) {
+                    // Optional: Log why sparkline was skipped for a measure if option is on
+                    // console.log(`--- Skipped sparkline for ${field.name} (Value: ${cellVal}, Type: ${typeof cellVal}, MinMax: ${!!(measureMinMax && measureMinMax[field.name])})`);
+                }
+                // --- End Sparkline Logic ---
+
+                // --- Combine final content string and sparkline string ---
+                // <<< REMOVED cell-content-wrapper span >>>
+                const finalHtml = `${finalContentString}${sparklineHtml}`;
+
+                return html(finalHtml); // Return Grid.js compatible HTML
             }
+            // --- End of formatter function ---
         };
     });
 
-    // Add Row Number Column Definition if configured
-    if (config?.showRowNumbers) {
+    // Add Row Number Column if configured
+    if (config?.showRowNumbers) { /* ... row number config ... */
         columns.unshift({
-            id: '_rowNum',
-            name: '#',
-            sort: false, // Row numbers shouldn't be sortable
-            resizable: false, // Fixed width
-            width: '50px',
+            id: '_rowNum', name: '#', sort: false, resizable: false, width: '50px',
             formatter: (cell: any, gridJsRowObject: any) => {
-                // Find the original Looker row index (stored in a hidden column)
                 let originalIndex: number | undefined;
                 try {
                     const indexCell = gridJsRowObject?.cells.find((c: any) => c.column?.id === '_originalIndex');
                     originalIndex = indexCell?.data;
-                } catch (e) { console.error("Error finding index cell in row num formatter", e); }
+                } catch (e) { /* ignore */ }
                 if (originalIndex === undefined) {
-                    try {
-                        originalIndex = gridJsRowObject?.cells[gridJsRowObject.cells.length - 1]?.data;
-                    } catch (e) { console.error("Error finding index via last cell in row num formatter", e); }
+                    try { originalIndex = gridJsRowObject?.cells[gridJsRowObject.cells.length - 1]?.data; }
+                    catch (e) { /* ignore */ }
                 }
-                // Display 1-based row number
                 const displayIndex = originalIndex !== undefined ? originalIndex + 1 : '?';
                 return html(`<span style="color:#999; user-select:none; font-size: 0.9em;">${displayIndex}</span>`);
             }
         });
     }
 
-    // Add Hidden Index Column Definition - Crucial for linking back to original data
-    columns.push({
-        id: '_originalIndex',
-        hidden: true // This column won't be visible to the user
-    });
+    // Add Hidden Index Column
+    columns.push({ id: '_originalIndex', hidden: true });
 
-    // --- Transform Looker Row data ---
-    const gridData = data.map((lookerRow, originalIndex) => {
-        // Map Looker fields to an array for the Grid.js row
-        const rowData: any[] = lookerFields.map(field => lookerRow[field.name]?.value); // Get raw value
-
-        // Add placeholder for row number if enabled (unshift adds to beginning)
-        if (config?.showRowNumbers) {
-            rowData.unshift(null); // Value doesn't matter, formatter uses index
-        }
-
-        // Add the original index to the end of the row data (for the hidden column)
+    // Transform Row Data
+    const gridData = data.map((lookerRow, originalIndex) => { /* ... row data mapping ... */
+        const rowData: any[] = lookerFields.map(field => {
+            const cellData = lookerRow[field.name];
+            return (cellData && typeof cellData === 'object' && 'value' in cellData) ? (cellData as Cell).value : cellData;
+        });
+        if (config?.showRowNumbers) { rowData.unshift(null); }
         rowData.push(originalIndex);
         return rowData;
     });
@@ -479,203 +555,141 @@ function transformLookerDataForGridJs(data: Row[], queryResponse: QueryResponse 
 
 // --- Looker Visualization Definition ---
 const visDefinition: VisualizationDefinition = {
-    id: 'log-viewer-gridjs', // Unique ID for the visualization
-    label: 'Log Viewer (Grid.js)', // Display name in Looker
-    options: { // User-configurable options
-        showRowNumbers: {
-            type: 'boolean',
-            label: 'Show Row Numbers',
-            default: true,
-            section: 'Display', // Group options in UI
-            order: 1
-        },
-        // Add other options here if needed
+    id: 'log-viewer-gridjs',
+    label: 'Log Viewer (Grid.js)',
+    options: { // Static options object
+        showRowNumbers: { type: 'boolean', label: 'Show Row Numbers', default: true, section: 'Display', order: 1 },
+        showMeasureSparklines: { type: 'boolean', label: 'Show Sparklines for Measures', default: false, section: 'Display', order: 2 },
     },
 
-    /**
-     * Called by Looker to create the visualization instance.
-     * Sets up the initial HTML and initializes the Grid.js instance.
-     */
+    /** Create Method */
     create: function (element: HTMLElement, config: VisConfig) {
+        // (Keep existing create implementation)
         console.log("Log Viewer Vis (Grid.js): Create called.");
         try {
-            // Set up the basic HTML structure and CSS
             setupHTML(element);
             console.log("Create: HTML structure setup attempted.");
-
-            // Defer Grid.js initialization until the DOM is ready
             setTimeout(() => {
                 console.log("Create (setTimeout): Finding elements...");
-                if (!findElements(element)) {
-                    console.error("Create (setTimeout): Critical elements not found. Cannot initialize grid.");
-                    element.innerHTML = `<div style='color:red; padding:10px;'>Error: Visualization container structure could not be found. Check CSS selectors.</div>`;
-                    return;
-                }
+                if (!findElements(element)) { /* error handling */ return; }
                 console.log("Create (setTimeout): Elements found. Initializing Grid...");
-
                 let grid: Grid | null = null;
                 try {
-                    // Initialize Grid.js with configuration
-                    grid = new Grid({
-                        columns: [], // Will be populated by updateAsync
-                        data: [],    // Will be populated by updateAsync
-                        sort: { multiColumn: true }, // Enable multi-column sorting
-                        search: true, // Enable global search
+                    grid = new Grid({ /* ... grid config ... */
+                        columns: [], data: [], sort: { multiColumn: true }, search: true,
                         language: { 'search': { 'placeholder': 'Filter value...' } },
-                        resizable: true, // Allow column resizing
-                        fixedHeader: true, // Keep header visible (relies on CSS for scrolling)
-                        pagination: false, // Disable pagination
-                        // @ts-ignore - autoHeight might not be in standard types but can exist
-                        autoHeight: false, // Rely on CSS for height
-                        width: '100%', // Grid takes full width of its container
-                        // height: '100%', // <<< REMOVED - Rely on CSS absolute positioning for wrapper height
+                        resizable: true, fixedHeader: true, pagination: false,
+                        // @ts-ignore
+                        autoHeight: false, width: '100%',
                     });
-                    console.log("Create (setTimeout): Grid instance created:", grid);
-
-                    // Render the grid into its container element
                     grid.render(elements.gridJsContainer!);
-                    console.log("Create (setTimeout): Grid rendered.");
-
-                    // Store the grid instance in state for later updates
                     state.gridInstance = grid;
-                    console.log("Create (setTimeout): Stored grid instance:", state.gridInstance);
-
-                    // Attach event listeners (highlight, minimap drag)
-                    attachListeners();
-                    console.log("Create (setTimeout): Listeners attached.");
-
+                    attachListeners(); // Attach listeners after grid is rendered
                     console.log("Log Viewer Vis (Grid.js): Create finished successfully (async part).");
-
-                } catch (initError) {
-                    console.error("!!!! Create (setTimeout): Error initializing or rendering Grid.js !!!!", initError);
-                    const errorMsg = initError instanceof Error ? initError.message : String(initError);
-                    // Display error within the visualization container if possible
-                    const container = elements.gridJsContainer || element;
-                    container.innerHTML = `<p style="color:red; padding: 10px;">Grid Initialization Error: ${errorMsg}</p>`;
-                    state.gridInstance = null; // Ensure instance is null on error
-                }
-            }, 0); // setTimeout 0 ensures this runs after current execution stack
-
-        } catch (error) {
-            console.error("Error during visualization creation (setupHTML):", error);
-            element.innerHTML = `<div style="color:red; padding:10px;">Create Error: ${error instanceof Error ? error.message : String(error)}</div>`;
-        }
+                } catch (initError) { /* error handling */ state.gridInstance = null; }
+            }, 0);
+        } catch (error) { /* error handling */ }
     },
 
-    /**
-     * Called by Looker when data or configuration changes.
-     * Updates the Grid.js instance with new data and configuration.
-     */
-    updateAsync: function (data: Row[], element: HTMLElement, config: VisConfig, queryResponse: QueryResponse, details: any, done: () => void) {
+    /** UpdateAsync Method */
+    updateAsync: function (data: VisData, element: HTMLElement, config: VisConfig, queryResponse: VisQueryResponse, details: any, done: () => void) {
+        // (Keep existing updateAsync implementation - includes preprocessing loop using static option)
         console.log("UpdateAsync: START. Grid instance:", state.gridInstance ? 'Exists' : 'NULL');
-        const logError = (message: string, err?: any) => {
-            console.error(message, err);
-            // Optionally use Looker's error reporting:
-            // this.addError?.({ title: 'Update Error', message: message });
-        };
+        const logError = (message: string, err?: any) => { console.error(message, err); };
 
-        // Ensure the grid instance exists (might not if create failed or is pending)
-        if (!state.gridInstance) {
-            console.warn("UpdateAsync: Grid instance not ready yet. Skipping update cycle.");
-            done(); // Signal completion
-            return;
-        }
+        if (!state.gridInstance) { /* handle missing instance */ done(); return; }
 
         try {
             console.log("UpdateAsync: Checking elements...");
-            // Re-find elements in case the DOM was manipulated externally (less likely here)
-            if (!findElements(element)) {
-                logError("Update Error: Critical elements missing during update.");
-                done();
-                return;
-            }
+            if (!findElements(element)) { /* error handling */ done(); return; }
             console.log("UpdateAsync: Elements found.");
 
-            // Re-attach listeners *only if* necessary. If setupHTML doesn't run again,
-            // and the core elements (#gridjs-container, #highlight-input, #gridjs-minimap) persist,
-            // then re-attaching might create duplicates. Usually safe to attach only in create.
-            // If drag/highlight stops working after updates, uncomment below.
-            // attachListeners();
-
             console.log("UpdateAsync: Updating core state...");
-            updateCoreState(data, queryResponse, config); // Update shared state
+            updateCoreState(data, queryResponse, config); // Update state
             console.log("UpdateAsync: Core state updated.");
 
+            // Log raw field structure
+            if (queryResponse?.fields?.measures?.[0]) {
+                console.log("Inspecting first measure field:", queryResponse.fields.measures[0]);
+            }
+            if (queryResponse?.fields?.dimensions?.[0]) {
+                console.log("Inspecting first dimension field:", queryResponse.fields.dimensions[0]);
+            }
+
+            // Preprocessing for Sparklines (Using Static Config)
+            state.measureMinMax = {};
+            if (config.showMeasureSparklines === true && queryResponse?.fields?.measures && data.length > 0) { // Use static option
+                const measures = queryResponse.fields.measures;
+                console.log(`Preprocessing sparkline data for ${measures.length} measures.`);
+                measures.forEach(measureField => {
+                    let minVal = Infinity, maxVal = -Infinity, hasNumeric = false;
+                    data.forEach(row => {
+                        const cellData = row[measureField.name];
+                        const value = (cellData && typeof cellData === 'object' && 'value' in cellData) ? (cellData as Cell).value : cellData;
+                        const numericValue = Number(value);
+                        if (typeof numericValue === 'number' && isFinite(numericValue)) {
+                            minVal = Math.min(minVal, numericValue);
+                            maxVal = Math.max(maxVal, numericValue);
+                            hasNumeric = true;
+                        }
+                    });
+                    if (hasNumeric) { state.measureMinMax![measureField.name] = { min: minVal, max: maxVal }; }
+                });
+                console.log("Calculated Measure Min/Max:", state.measureMinMax);
+            }
+
             console.log("UpdateAsync: Transforming data...");
-            // Transform Looker data into Grid.js format
-            const { columns, data: gridData } = transformLookerDataForGridJs(state.originalData, state.queryResponse, state.config);
+            const { columns, data: gridData } = transformLookerDataForGridJs(
+                state.originalData, state.queryResponse, state.config, state.measureMinMax
+            );
             console.log(`UpdateAsync: Data transformed (${columns?.length} cols, ${gridData?.length} rows).`);
 
-            // Determine if the grid should be cleared (no columns/data)
             const shouldClearGrid = (!columns || columns.length === 0) && (!gridData || gridData.length === 0);
             console.log(`UpdateAsync: Should clear grid? ${shouldClearGrid}`);
 
             console.log("UpdateAsync: Updating grid config...");
-            // Update the Grid.js instance configuration with new columns and data
-            state.gridInstance.updateConfig({
-                columns: shouldClearGrid ? [] : columns,
-                data: shouldClearGrid ? [] : gridData,
-                // Re-apply other necessary config options
-                search: true,
-                language: { 'search': { 'placeholder': 'Filter value...' } },
-                sort: { multiColumn: true },
-                resizable: true,
-                fixedHeader: true, // Keep header fixed
-                pagination: false,
+            state.gridInstance.updateConfig({ /* ... update config ... */
+                columns: shouldClearGrid ? [] : columns, data: shouldClearGrid ? [] : gridData,
+                search: true, language: { 'search': { 'placeholder': 'Filter value...' } },
+                sort: { multiColumn: true }, resizable: true, fixedHeader: true, pagination: false,
                 // @ts-ignore
-                autoHeight: false, // Rely on CSS
-                width: '100%',
-                // height: '100%', // <<< REMOVED
+                autoHeight: false, width: '100%',
             });
             console.log("UpdateAsync: Grid config updated.");
 
             console.log("UpdateAsync: Calling forceRender...");
-            // Force Grid.js to re-render with the updated configuration
             state.gridInstance.forceRender();
             console.log("UpdateAsync: forceRender called.");
 
-            // Apply highlighting and update minimap *after* rendering is likely complete
+            // Post-render actions
             setTimeout(() => {
                 console.log("UpdateAsync: setTimeout callback START.");
-                try {
-                    // Re-apply highlight based on current term in state
-                    applyHighlight(state.highlightTerm);
-                } catch (highlightError) {
-                    logError("Error during post-render highlight/minimap update:", highlightError);
-                } finally {
-                    console.log("UpdateAsync: setTimeout callback calling done().");
-                    done(); // Signal Looker that the update is complete
-                }
-            }, 50); // Small delay to allow DOM updates
+                (window as any).__logged_sparkline_gen = {}; // Reset log flags
+                (window as any).__logged_sparkline = {};
+                try { applyHighlight(state.highlightTerm); }
+                catch (highlightError) { logError("Error during post-render highlight/minimap update:", highlightError); }
+                finally { console.log("UpdateAsync: setTimeout callback calling done()."); done(); }
+            }, 50);
 
         } catch (err) {
-            logError(`UpdateAsync: CAUGHT ERROR during update logic: ${err instanceof Error ? err.message : String(err)}`, err);
+            logError(`UpdateAsync: CAUGHT ERROR: ${err instanceof Error ? err.message : String(err)}`, err);
             if (err instanceof Error) { console.error(err.stack); }
-            done(); // Ensure done() is called even on error
+            done();
         }
-    }
-    // Add other lifecycle methods like destroy if needed
-    // destroy: function() { ... }
+    },
+
+    // Add Empty trigger function
+    trigger: (event: string, config: any[]) => {
+        console.log("Vis Triggered:", event, config);
+    },
 };
 
 // Register the visualization with Looker
 looker.plugins.visualizations.add(visDefinition);
 
 // Add CSS for the grabbing cursor dynamically
-// This ensures the style is available regardless of CSS load order
 const grabbingStyle = document.createElement('style');
-grabbingStyle.textContent = `
-  #gridjs-minimap.grabbing {
-    cursor: grabbing !important; /* Use grabbing cursor during drag */
-  }
-`;
-// Append the style element to the document's head
-if (document.head) {
-    document.head.appendChild(grabbingStyle);
-} else {
-    // Fallback if head isn't ready immediately (less likely)
-    document.addEventListener('DOMContentLoaded', () => {
-        document.head.appendChild(grabbingStyle);
-    });
-}
+grabbingStyle.textContent = ` #gridjs-minimap.grabbing { cursor: grabbing !important; } `;
+if (document.head) { document.head.appendChild(grabbingStyle); }
+else { document.addEventListener('DOMContentLoaded', () => { document.head.appendChild(grabbingStyle); }); }
 

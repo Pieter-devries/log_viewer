@@ -7,7 +7,7 @@ const GRIDJS_CSS_URL = "mermaids.css"; // Assuming handled or replace with a CDN
 /***
  * Sets up the initial HTML structure for the visualization.
  * Uses CSS variables for key dimensions and absolute positioning
- * for the grid wrapper and minimap overlay.
+ * for the grid wrapper and minimap overlay. Includes sparkline styles.
  * @param visElement - The HTMLElement provided by Looker to render the visualization into.
  */
 export function setupHTML(visElement: HTMLElement): void {
@@ -16,9 +16,8 @@ export function setupHTML(visElement: HTMLElement): void {
     // --- Define Estimated/Fixed Heights & Widths ---
     // !!! IMPORTANT: Inspect your actual rendered .gridjs-head and .gridjs-footer
     // heights using Developer Tools and adjust these CSS variable values if necessary.
-    // The header height might change depending on whether the search bar is shown.
-    const estimatedHeaderHeight = '40px'; // Example: Adjust based on inspection
-    const estimatedFooterHeight = '5px'; // Example: Adjust (or set to 0px if footer is often empty)
+    const estimatedHeaderHeight = '40px'; // Adjusted based on previous user feedback
+    const estimatedFooterHeight = '5px';  // Adjusted based on previous user feedback
     const minimapWidth = '15px';          // Width of the minimap element
     const minimapGap = '2px';             // Small gap between grid and minimap overlay
     // ------------------------------------------------
@@ -33,6 +32,10 @@ export function setupHTML(visElement: HTMLElement): void {
         --gridjs-minimap-gap: ${minimapGap};
         /* Calculate padding needed for the grid container based on minimap */
         --gridjs-container-padding-right: calc(var(--gridjs-minimap-width) + var(--gridjs-minimap-gap));
+        /* Define link colors */
+        --link-color-default: #9bf; /* Light blue */
+        --link-color-visited: #a9d; /* Lighter purple/magenta */
+        --link-color-hover: #bff;  /* Cyan */
       }
 
       /* Base container for the entire visualization */
@@ -229,31 +232,31 @@ export function setupHTML(visElement: HTMLElement): void {
        .gridjs-tr:nth-child(odd) { background-color: black; }
        .gridjs-tr:nth-child(even) { background-color: #111; }
 
-       /* Table Cells */
-       td.gridjs-td {
-         color: #ddd;
-         padding: 4px 10px;
-         border: none;
-         border-bottom: 1px dotted #444;
-         line-height: 1.5;
-         white-space: normal;
-         overflow-wrap: break-word;
-         word-break: break-word;
-         box-sizing: border-box;
-         height: 1%; /* Allow row height to shrink */
-       }
-       /* Style for drillable links */
-       td.gridjs-td .drillable {
-         cursor: pointer;
-         text-decoration: underline;
-         text-decoration-color: #66f;
-         color: #9bf;
-       }
-       td.gridjs-td .drillable:hover {
-         text-decoration-color: #aaf;
-         color: #aef;
-         background-color: rgba(100, 100, 255, 0.1);
-       }
+   /* Table Body & Cells */
+      .gridjs-tbody { background-color: black; z-index: 0; }
+      .gridjs-tr { border: none; }
+      .gridjs-tr:nth-child(odd) { background-color: black; }
+      .gridjs-tr:nth-child(even) { background-color: #111; }
+      td.gridjs-td { color: #ddd; padding: 4px 10px; border: none; border-bottom: 1px dotted #444; line-height: 1.5; white-space: normal; overflow-wrap: break-word; word-break: break-word; box-sizing: border-box; height: 1%; }
+      /* Style for drillable links created by our code */
+      td.gridjs-td .drillable { cursor: pointer; text-decoration: underline; text-decoration-color: var(--link-color-default); color: var(--link-color-default); }
+      td.gridjs-td .drillable:hover { text-decoration-color: var(--link-color-hover); color: var(--link-color-hover); background-color: rgba(100, 100, 255, 0.1); }
+      /* <<< NEW: Style for ALL links within table cells >>> */
+      td.gridjs-td a {
+          color: var(--link-color-default);
+          text-decoration: underline;
+          text-decoration-color: var(--link-color-default);
+      }
+      td.gridjs-td a:visited {
+          color: var(--link-color-visited); /* Softer visited color */
+          text-decoration-color: var(--link-color-visited);
+      }
+      td.gridjs-td a:hover,
+      td.gridjs-td a:focus {
+          color: var(--link-color-hover);
+          text-decoration-color: var(--link-color-hover);
+      }
+      /* <<< End Link Color Styles >>> */
        /* Style for messages like 'Loading...' or 'No data' */
        td.gridjs-message {
          text-align: center;
@@ -276,7 +279,10 @@ export function setupHTML(visElement: HTMLElement): void {
           box-shadow: inset 2px 0 5px -2px rgba(0,0,0,0.5); /* Inner shadow */
           z-index: 3;          /* Sit on top of grid container */
           box-sizing: border-box;
+          cursor: grab; /* Add grab cursor */
       }
+      #gridjs-minimap.grabbing { cursor: grabbing !important; } /* Add grabbing cursor style */
+
 
       /* Individual markers on the minimap */
       .minimap-marker {
@@ -291,7 +297,6 @@ export function setupHTML(visElement: HTMLElement): void {
       }
 
       /* Scrollbar Styles (apply to the wrapper where overflow:auto is set) */
-      /* Style the scrollbar appearing on .gridjs-wrapper */
       .gridjs-wrapper::-webkit-scrollbar {
          width: var(--gridjs-minimap-width); /* Try to match minimap width */
          height: 10px; /* Height for horizontal scrollbar */
@@ -321,9 +326,40 @@ export function setupHTML(visElement: HTMLElement): void {
         box-shadow: 0 0 0 1px #ffd700; /* Subtle outline */
       }
 
+      /* Sparkline Styles - Updated for Histogram */
+      .sparkline-container {
+          display: inline-flex; /* Arrange bars horizontally */
+          align-items: flex-end; /* Align bars to bottom */
+          /* width: 50px; */ /* Width determined by bars inside */
+          height: 16px; /* Overall height */
+          /* background-color: #333; */ /* Remove container background */
+          /* border: 1px solid #555; */ /* Remove container border */
+          margin-left: 8px;
+          vertical-align: middle;
+          gap: 1px; /* Space between bars */
+          position: relative;
+          box-sizing: border-box;
+      }
+
+      .sparkline-hist-bar { /* Style for individual bars */
+          display: block;
+          width: 3px; /* <<< Width of each bar */
+          background-color: #444; /* <<< Default color for empty part */
+          /* height is set via inline style */
+          box-sizing: border-box;
+          flex-shrink: 0;
+      }
+      .sparkline-hist-bar--filled { /* Modifier for filled bars */
+         background-color: #66f; /* <<< Active bar color */
+      }
+      /* <<< End Sparkline Styles >>> */
+
+       /* Wrapper for cell content to help layout */
+
+
     `;
 
-    // 2. Define the *complete* HTML structure string (Simplified wrapper)
+    // 2. Define the *complete* HTML structure string
     const htmlContent = `
         <link href="${GRIDJS_CSS_URL}" rel="stylesheet" />
         <style id="gridjs-custom-styles">${styles}</style>
@@ -355,7 +391,6 @@ export function setupHTML(visElement: HTMLElement): void {
  */
 export function findElements(visElement: HTMLElement): boolean {
     console.log("findElements: Attempting to find elements...");
-    // Use visElement passed in, or fallback to stored elements.visElement if needed
     const baseElement = visElement || elements.visElement;
     if (!baseElement) {
         console.error("findElements: visElement is null!");
