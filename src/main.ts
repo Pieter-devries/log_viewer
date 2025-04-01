@@ -282,10 +282,9 @@ const visDefinition: VisualizationDefinition = {
                         columns: [], data: [],
                         sort: { multiColumn: true }, search: true,
                         language: { 'search': { 'placeholder': 'Filter value...' } },
-                        resizable: true, fixedHeader: true, pagination: false,
-                        // @ts-ignore autoHeight is valid but maybe not in types
-                        autoHeight: false,
-                        width: '100%', height: '100%',
+                        resizable: true, fixedHeader: false, pagination: false,
+                        width: '100%',
+                        // height: '100%',　// THIS DESTROYS THE VERTICAL SCROLL!!
                     });
                     console.log("Create (setTimeout): Grid instance created:", grid);
                     grid.render(elements.gridJsContainer!);
@@ -341,9 +340,8 @@ const visDefinition: VisualizationDefinition = {
                 data: shouldClearGrid ? [] : gridData,
                 search: true, language: { 'search': { 'placeholder': 'Filter value...' } },
                 sort: { multiColumn: true }, resizable: true, fixedHeader: true, pagination: false,
-                // @ts-ignore autoHeight is valid but maybe not in types
-                autoHeight: false,
-                width: '100%', height: '100%',
+                width: '100%',
+                // height: '100%',
             });
             console.log("UpdateAsync: Grid config updated.");
 

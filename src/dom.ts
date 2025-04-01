@@ -1,83 +1,326 @@
+// dom.ts
 import { state, elements } from './state';
-// No longer importing escapeRegExp here, will be used in main.ts
-// No longer defining highlight/minimap/listener functions here
 
-const GRIDJS_CSS_URL = "mermaids.css"; // Assuming handled
+// URL for Grid.js default CSS (ensure this is accessible in your Looker environment)
+const GRIDJS_CSS_URL = "mermaids.css"; // Assuming handled or replace with a CDN/correct path
 
-/*** Sets up the initial HTML structure using innerHTML. Grid init deferred. */
+/***
+ * Sets up the initial HTML structure for the visualization.
+ * Uses CSS variables for key dimensions and absolute positioning
+ * for the grid wrapper and minimap overlay.
+ * @param visElement - The HTMLElement provided by Looker to render the visualization into.
+ */
 export function setupHTML(visElement: HTMLElement): void {
     console.log("Setting up HTML structure (Using innerHTML, init deferred)");
 
+    // --- Define Estimated/Fixed Heights & Widths ---
+    // !!! IMPORTANT: Inspect your actual rendered .gridjs-head and .gridjs-footer
+    // heights using Developer Tools and adjust these CSS variable values if necessary.
+    // The header height might change depending on whether the search bar is shown.
+    const estimatedHeaderHeight = '40px'; // Example: Adjust based on inspection
+    const estimatedFooterHeight = '5px'; // Example: Adjust (or set to 0px if footer is often empty)
+    const minimapWidth = '15px';          // Width of the minimap element
+    const minimapGap = '2px';             // Small gap between grid and minimap overlay
+    // ------------------------------------------------
+
     // 1. Define Styles
     const styles = `
-      /* Styles remain the same as v12 */
-      /* Base container */
-      .log-viewer-container { background-color: black; color: #ddd; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; height: 100%; position: relative; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
-      /* Controls area */
-      #controls-area { position: relative; z-index: 10; background-color: #1c1c1c; padding: 5px 8px; border-bottom: 1px solid #444; flex-shrink: 0; min-height: 35px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; box-sizing: border-box; }
-      #controls-area label { color: #aaa; font-size: 0.9em; margin-right: 5px; }
-      #controls-area input[type="text"], #controls-area input.gridjs-input { background-color: #2a2a2a; border: 1px solid #444; color: #ddd; border-radius: 4px; padding: 4px 8px; font-size: 13px; line-height: 1.4; box-sizing: border-box; }
-      #controls-area input[type="text"]:focus { border-color: #66f; box-shadow: 0 0 0 2px rgba(100, 100, 255, 0.3); outline: none; }
-
-      /* NEW: Simplified Layout - Controls + Content Area */
-      #content-area {
-          flex-grow: 1;
-          display: flex; /* Grid + Minimap side-by-side */
-          flex-direction: row;
-          overflow: hidden; /* Important */
-          position: relative;
+      :root {
+        /* Define CSS variables for header/footer height and minimap dimensions */
+        --gridjs-header-height: ${estimatedHeaderHeight};
+        --gridjs-footer-height: ${estimatedFooterHeight};
+        --gridjs-minimap-width: ${minimapWidth};
+        --gridjs-minimap-gap: ${minimapGap};
+        /* Calculate padding needed for the grid container based on minimap */
+        --gridjs-container-padding-right: calc(var(--gridjs-minimap-width) + var(--gridjs-minimap-gap));
       }
 
-      /* Grid.js Container */
-      #gridjs-container { flex-grow: 1; /* Take available width */ overflow: hidden; position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0; box-sizing: border-box; }
-      /* Grid.js Search Input positioning */
-      .gridjs-head { padding-top: 40px; position: relative; flex-shrink: 0; border-bottom: 1px solid #555; box-sizing: border-box; }
-      .gridjs-search { position: absolute; top: 5px; left: 8px; }
-      input.gridjs-input.gridjs-search-input { width: 200px; }
-      /* Grid.js Scrollable Wrapper */
-      .gridjs-wrapper { flex-grow: 1; overflow: auto; position: relative; border: none; box-shadow: none; border-radius: 0; width: 100%; z-index: 1; background-color: black; box-sizing: border-box; }
-      /* Table */
-      table.gridjs-table { border-collapse: collapse; text-align: left; width: 100%; table-layout: fixed; }
-      /* Header Cells */
-      th.gridjs-th { background-color: #1a1a1a; color: #eee; border: none; border-right: 1px solid #333; border-bottom: 1px solid #555; padding: 8px 10px; font-weight: bold; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; position: sticky !important; top: 0 !important; z-index: 2 !important; box-sizing: border-box; vertical-align: middle; user-select: none; }
-      th.gridjs-th:last-child { border-right: none; }
-      th.gridjs-th-fixed { background-color: #1a1a1a; }
-      th.gridjs-th .gridjs-th-content { float: left; overflow: hidden; text-overflow: ellipsis; width: 100%; }
-      /* Sort Indicator */
-      th.gridjs-th-sort { cursor: pointer; position: relative; }
-      th.gridjs-th-sort:focus, th.gridjs-th-sort:hover { background-color: #333 !important; }
-      th.gridjs-th-sort .gridjs-th-content { width: calc(100% - 25px); }
-      button.gridjs-sort { background: none !important; border: none !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; float: right; height: 100%; width: 20px; cursor: pointer; vertical-align: middle; opacity: 0; position: absolute; right: 5px; top: 0; }
-      th.gridjs-th-sort::after { content: ''; display: block; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; opacity: 0.4; pointer-events: none; }
-      th.gridjs-th-sort[aria-sort="none"]::after, th.gridjs-th-sort:not([aria-sort])::after { opacity: 0.2; border-top: 0; border-bottom: 0; }
-      th.gridjs-th-sort[aria-sort="ascending"]::after { border-bottom: 6px solid #eee; border-top: 0; opacity: 1; }
-      th.gridjs-th-sort[aria-sort="descending"]::after { border-top: 6px solid #eee; border-bottom: 0; opacity: 1; }
-      /* Resizer */
-      .gridjs-resizable { position: absolute !important; top: 0; bottom: 0; right: -5px; width: 10px; cursor: ew-resize; z-index: 3 !important; }
-      .gridjs-resizable:hover { background-color: rgba(100, 100, 255, 0.5) !important; }
-      /* Table Body */
-      .gridjs-tbody { background-color: black; z-index: 0; }
-      .gridjs-tr { border: none; }
-      .gridjs-tr:nth-child(odd) { background-color: black; }
-      .gridjs-tr:nth-child(even) { background-color: #111; }
-      /* Table Cells */
-      td.gridjs-td { color: #ddd; padding: 4px 10px; border: none; border-bottom: 1px dotted #444; line-height: 1.5; white-space: normal; overflow-wrap: break-word; word-break: break-word; box-sizing: border-box; height: 1%; }
-      td.gridjs-td .drillable { cursor: pointer; text-decoration: underline; text-decoration-color: #66f; color: #9bf; }
-      td.gridjs-td .drillable:hover { text-decoration-color: #aaf; color: #aef; background-color: rgba(100, 100, 255, 0.1); }
-      td.gridjs-message { text-align: center; padding: 15px; color: #aaa; background-color: black; }
-      /* Footer */
-      .gridjs-footer { background-color: #1c1c1c; border-top: 1px solid #555; box-shadow: none; padding: 5px 10px; flex-shrink: 0; color: #aaa; }
-      .gridjs-footer:empty { padding: 0; border: none; }
-      /* Scrollbars */
-      .gridjs-container ::-webkit-scrollbar, .gridjs-wrapper::-webkit-scrollbar { width: 10px; height: 10px; }
-      .gridjs-container ::-webkit-scrollbar-thumb, .gridjs-wrapper::-webkit-scrollbar-thumb { background: #555; border-radius: 5px; border: 2px solid black; }
-      .gridjs-container ::-webkit-scrollbar-track, .gridjs-wrapper::-webkit-scrollbar-track { background: #222; }
-      .gridjs-container, .gridjs-wrapper { scrollbar-width: thin; scrollbar-color: #555 #222; }
-      /* Highlight Style */
-      mark.gridjs-highlight { background-color: #ffd700; color: black; padding: 0; border-radius: 2px; box-shadow: 0 0 0 1px #ffd700; }
-      /* Minimap Styles */
-      #gridjs-minimap { width: 15px; height: 100%; background-color: #222; position: relative; overflow: hidden; flex-shrink: 0; box-shadow: inset 2px 0 5px -2px rgba(0,0,0,0.5); }
-      .minimap-marker { position: absolute; left: 1px; right: 1px; height: 2px; background-color: rgba(255, 215, 0, 0.6); pointer-events: none; border-radius: 1px; z-index: 1; }
+      /* Base container for the entire visualization */
+       .log-viewer-container {
+         background-color: black;
+         color: #ddd;
+         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+         font-size: 13px;
+         height: 100%;
+         position: relative;
+         display: flex;
+         flex-direction: column;
+         overflow: hidden; /* Prevent container itself from scrolling */
+         box-sizing: border-box;
+       }
+
+       /* Area for top controls like the highlight input */
+       #controls-area {
+         position: relative;
+         z-index: 10; /* Above grid content */
+         background-color: #1c1c1c;
+         padding: 5px 8px;
+         border-bottom: 1px solid #444;
+         flex-shrink: 0; /* Prevent shrinking */
+         min-height: 35px;
+         display: flex;
+         align-items: center;
+         gap: 15px;
+         flex-wrap: wrap;
+         box-sizing: border-box;
+       }
+       #controls-area label {
+         color: #aaa;
+         font-size: 0.9em;
+         margin-right: 5px;
+       }
+       #controls-area input[type="text"],
+       #controls-area input.gridjs-input { /* Style gridjs inputs if they appear here */
+         background-color: #2a2a2a;
+         border: 1px solid #444;
+         color: #ddd;
+         border-radius: 4px;
+         padding: 4px 8px;
+         font-size: 13px;
+         line-height: 1.4;
+         box-sizing: border-box;
+       }
+       #controls-area input[type="text"]:focus {
+         border-color: #66f;
+         box-shadow: 0 0 0 2px rgba(100, 100, 255, 0.3);
+         outline: none;
+       }
+
+
+      /* Content Area - Holds the grid container and the absolute minimap */
+      #content-area {
+          flex-grow: 1; /* Takes remaining vertical space */
+          display: flex;
+          flex-direction: row; /* Grid and minimap conceptually side-by-side */
+          overflow: hidden; /* Clip content */
+          position: relative; /* Positioning context for the minimap */
+          height: 100%; /* Necessary for children height % */
+          min-height: 0; /* Prevent flex blowout */
+      }
+
+      /* Grid.js Container - Takes up available space, provides padding for minimap */
+      #gridjs-container {
+          flex-grow: 1; /* Takes available horizontal space */
+          position: relative; /* Positioning context for wrapper/header/footer */
+          display: flex;
+          flex-direction: column; /* Stack header, wrapper, footer */
+          height: 100%;
+          min-height: 0;
+          box-sizing: border-box;
+          padding-right: var(--gridjs-container-padding-right); /* Space for minimap */
+      }
+
+      /* Grid.js Header - Sits at the top of #gridjs-container */
+      .gridjs-head {
+         flex-shrink: 0; /* Prevent shrinking */
+         height: var(--gridjs-header-height); /* Use variable */
+         position: relative; /* For z-index */
+         z-index: 1; /* Above wrapper */
+         border-bottom: 1px solid #555;
+         box-sizing: border-box;
+         padding-top: 0; /* Reset padding if needed */
+      }
+       /* Position search within the header */
+       .gridjs-search {
+         position: absolute;
+         top: 5px; /* Adjust as needed */
+         left: 8px; /* Adjust as needed */
+       }
+       input.gridjs-input.gridjs-search-input {
+         width: 200px; /* Example width */
+       }
+
+      /* Grid.js Footer - Sits at the bottom of #gridjs-container */
+      .gridjs-footer {
+          flex-shrink: 0; /* Prevent shrinking */
+          height: var(--gridjs-footer-height); /* Use variable */
+          position: relative; /* For z-index */
+          z-index: 1; /* Above wrapper */
+          background-color: #1c1c1c;
+          border-top: 1px solid #555;
+          box-shadow: none;
+          padding: 5px 10px;
+          color: #aaa;
+          box-sizing: border-box;
+      }
+       /* Collapse footer visually if it's empty */
+       .gridjs-footer:empty {
+         height: 0;
+         padding: 0;
+         border: none;
+       }
+
+      /* Grid.js Scrollable Wrapper - Positioned absolutely to fill space between header/footer */
+      .gridjs-wrapper {
+          position: absolute;
+          /* Positioned relative to #gridjs-container's padding box */
+          top: var(--gridjs-header-height);
+          bottom: var(--gridjs-footer-height);
+          left: 0;
+          right: 0; /* Respects parent's padding-right */
+          overflow: auto; /* <<< THIS element has the scrollbars */
+          z-index: 0; /* Behind header/footer */
+          background-color: black;
+          box-sizing: border-box;
+      }
+
+      /* Table within the wrapper */
+       table.gridjs-table {
+         border-collapse: collapse;
+         text-align: left;
+         width: 100%;
+         table-layout: fixed;
+       }
+
+       /* Table Header Cells - Sticky relative to the scrolling wrapper */
+       th.gridjs-th {
+         background-color: #1a1a1a;
+         color: #eee;
+         border: none;
+         border-right: 1px solid #333;
+         border-bottom: 1px solid #555;
+         padding: 8px 10px;
+         font-weight: bold;
+         text-align: left;
+         overflow: hidden;
+         text-overflow: ellipsis;
+         white-space: nowrap;
+         position: sticky !important; /* Make header sticky */
+         top: 0 !important;           /* Stick to top of .gridjs-wrapper */
+         z-index: 2 !important;       /* Above table body content */
+         box-sizing: border-box;
+         vertical-align: middle;
+         user-select: none;
+       }
+       th.gridjs-th:last-child {
+         border-right: none;
+       }
+       /* Style for fixed columns header cells if using that feature */
+       th.gridjs-th-fixed {
+         background-color: #1a1a1a;
+       }
+        /* Inner content div within TH */
+       th.gridjs-th .gridjs-th-content {
+         float: left;
+         overflow: hidden;
+         text-overflow: ellipsis;
+         width: 100%;
+       }
+
+       /* Sort Indicator Styles */
+       th.gridjs-th-sort { cursor: pointer; position: relative; }
+       th.gridjs-th-sort:focus,
+       th.gridjs-th-sort:hover { background-color: #333 !important; }
+       th.gridjs-th-sort .gridjs-th-content { width: calc(100% - 25px); } /* Space for indicator */
+       button.gridjs-sort { background: none !important; border: none !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; float: right; height: 100%; width: 20px; cursor: pointer; vertical-align: middle; opacity: 0; position: absolute; right: 5px; top: 0; }
+       th.gridjs-th-sort::after { content: ''; display: block; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; opacity: 0.4; pointer-events: none; }
+       th.gridjs-th-sort[aria-sort="none"]::after,
+       th.gridjs-th-sort:not([aria-sort])::after { opacity: 0.2; border-top: 0; border-bottom: 0; }
+       th.gridjs-th-sort[aria-sort="ascending"]::after { border-bottom: 6px solid #eee; border-top: 0; opacity: 1; }
+       th.gridjs-th-sort[aria-sort="descending"]::after { border-top: 6px solid #eee; border-bottom: 0; opacity: 1; }
+
+       /* Resizer Styles */
+       .gridjs-resizable { position: absolute !important; top: 0; bottom: 0; right: -5px; width: 10px; cursor: ew-resize; z-index: 3 !important; }
+       .gridjs-resizable:hover { background-color: rgba(100, 100, 255, 0.5) !important; }
+
+       /* Table Body */
+       .gridjs-tbody { background-color: black; z-index: 0; }
+       .gridjs-tr { border: none; }
+       .gridjs-tr:nth-child(odd) { background-color: black; }
+       .gridjs-tr:nth-child(even) { background-color: #111; }
+
+       /* Table Cells */
+       td.gridjs-td {
+         color: #ddd;
+         padding: 4px 10px;
+         border: none;
+         border-bottom: 1px dotted #444;
+         line-height: 1.5;
+         white-space: normal;
+         overflow-wrap: break-word;
+         word-break: break-word;
+         box-sizing: border-box;
+         height: 1%; /* Allow row height to shrink */
+       }
+       /* Style for drillable links */
+       td.gridjs-td .drillable {
+         cursor: pointer;
+         text-decoration: underline;
+         text-decoration-color: #66f;
+         color: #9bf;
+       }
+       td.gridjs-td .drillable:hover {
+         text-decoration-color: #aaf;
+         color: #aef;
+         background-color: rgba(100, 100, 255, 0.1);
+       }
+       /* Style for messages like 'Loading...' or 'No data' */
+       td.gridjs-message {
+         text-align: center;
+         padding: 15px;
+         color: #aaa;
+         background-color: black;
+       }
+
+
+      /* Minimap Styles - Positioned absolutely over the scrollbar area */
+      #gridjs-minimap {
+          position: absolute; /* Position absolutely within #content-area */
+          top: 0;             /* Align to top */
+          bottom: 0;          /* Stretch to bottom */
+          right: 0;           /* Align to right edge of #content-area */
+          width: var(--gridjs-minimap-width); /* Use variable */
+          height: 100%;       /* Ensure full height */
+          background-color: #222; /* Background of the minimap */
+          overflow: hidden;      /* Hide markers that might overflow */
+          box-shadow: inset 2px 0 5px -2px rgba(0,0,0,0.5); /* Inner shadow */
+          z-index: 3;          /* Sit on top of grid container */
+          box-sizing: border-box;
+      }
+
+      /* Individual markers on the minimap */
+      .minimap-marker {
+          position: absolute;
+          left: 1px; /* Small inset */
+          right: 1px; /* Small inset */
+          height: 2px; /* Height of marker */
+          background-color: rgba(255, 215, 0, 0.6); /* Highlight color */
+          pointer-events: none; /* Don't intercept clicks */
+          border-radius: 1px;
+          z-index: 1; /* Stacking within minimap */
+      }
+
+      /* Scrollbar Styles (apply to the wrapper where overflow:auto is set) */
+      /* Style the scrollbar appearing on .gridjs-wrapper */
+      .gridjs-wrapper::-webkit-scrollbar {
+         width: var(--gridjs-minimap-width); /* Try to match minimap width */
+         height: 10px; /* Height for horizontal scrollbar */
+       }
+      .gridjs-wrapper::-webkit-scrollbar-thumb {
+          background: #555; /* Color of the draggable thumb */
+          border-radius: 5px;
+          /* Add border matching background to make thumb seem inset */
+          border: 2px solid #222; /* Use minimap background color */
+       }
+      .gridjs-wrapper::-webkit-scrollbar-track {
+          background: transparent; /* Make track invisible */
+       }
+       /* Firefox scrollbar styling */
+      .gridjs-wrapper {
+          scrollbar-width: thin; /* Or 'auto' or 'none' */
+          /* thumb color, track color */
+          scrollbar-color: #555 transparent;
+       }
+
+      /* Highlight Style within table cells */
+      mark.gridjs-highlight {
+        background-color: #ffd700; /* Yellow highlight */
+        color: black; /* Text color on highlight */
+        padding: 0;
+        border-radius: 2px;
+        box-shadow: 0 0 0 1px #ffd700; /* Subtle outline */
+      }
+
     `;
 
     // 2. Define the *complete* HTML structure string (Simplified wrapper)
@@ -88,7 +331,7 @@ export function setupHTML(visElement: HTMLElement): void {
             <div id="controls-area">
                 <label for="highlight-input">Highlight:</label>
                 <input type="text" id="highlight-input" placeholder="Highlight text..." />
-                </div>
+            </div>
             <div id="content-area">
                  <div id="gridjs-container"></div>
                  <div id="gridjs-minimap"></div>
@@ -96,28 +339,37 @@ export function setupHTML(visElement: HTMLElement): void {
         </div>
     `;
 
-    // 3. Set innerHTML ONCE
+    // 3. Set innerHTML ONCE to the visualization element
     visElement.innerHTML = htmlContent;
 
-    // 4. DO NOT find elements here. Defer to create function's setTimeout.
-    elements.visElement = visElement; // Store the main element reference
+    // 4. Store reference to the main element, but defer finding child elements
+    elements.visElement = visElement;
     console.log("setupHTML: innerHTML set. Element finding deferred.");
 }
 
-//*** Finds and stores references to important DOM elements. Called by create/updateAsync. */
+/**
+ * Finds and stores references to important DOM elements within the visualization.
+ * Should be called after setupHTML and the DOM has likely been updated.
+ * @param visElement - The root HTMLElement of the visualization.
+ * @returns {boolean} - True if all critical elements were found, false otherwise.
+ */
 export function findElements(visElement: HTMLElement): boolean {
     console.log("findElements: Attempting to find elements...");
-    // Use visElement passed in, or fallback to stored elements.visElement
+    // Use visElement passed in, or fallback to stored elements.visElement if needed
     const baseElement = visElement || elements.visElement;
     if (!baseElement) {
         console.error("findElements: visElement is null!");
         return false;
     }
 
+    // Find the main container where Grid.js will render
     elements.gridJsContainer = baseElement.querySelector<HTMLElement>("#gridjs-container");
+    // Find the input element for highlighting text
     elements.highlightInput = baseElement.querySelector<HTMLInputElement>("#highlight-input");
+    // Find the container element for the minimap overlay
     elements.minimapContainer = baseElement.querySelector<HTMLElement>("#gridjs-minimap");
 
+    // Check if all essential elements were found
     const criticalElementsFound = !!elements.gridJsContainer && !!elements.highlightInput && !!elements.minimapContainer;
 
     if (!criticalElementsFound) {
@@ -125,18 +377,10 @@ export function findElements(visElement: HTMLElement): boolean {
         if (!elements.gridJsContainer) console.error("... #gridjs-container is missing");
         if (!elements.highlightInput) console.error("... #highlight-input is missing");
         if (!elements.minimapContainer) console.error("... #gridjs-minimap is missing");
-        // Log parent structure for debugging
+        // Log parent structure for debugging if elements are missing
         console.log("Parent structure for debugging:", baseElement.innerHTML);
     } else {
         console.log("findElements: All critical elements found.");
     }
     return criticalElementsFound;
 }
-
-// Remove helper functions - they will be moved to main.ts
-// function debounce(...) {}
-// export function attachListeners(...) {}
-// function clearHighlight(...) {}
-// export function applyHighlight(...) {}
-// function highlightTextNodes(...) {}
-// export function updateMinimap(...) {}
