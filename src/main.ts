@@ -22,7 +22,7 @@ function isHTMLElement(value: any): value is HTMLElement {
 
 // --- Other Helper Functions ---
 // (Keep all existing helper functions: debounce, clearHighlight, highlightTextNodes, applyHighlight, updateMinimap, handleMinimapMouseDown, handleMinimapMouseMove, handleMinimapMouseUp, attachListeners)
-// ...
+// ... (Previous helper functions go here) ...
 /** Debounce utility function */
 function debounce(func: (...args: any[]) => void, wait: number): (...args: any[]) => void {
     let timeout: number | undefined;
@@ -38,7 +38,7 @@ function debounce(func: (...args: any[]) => void, wait: number): (...args: any[]
 function clearHighlight(): void {
     if (elements.gridJsContainer) {
         const marks = elements.gridJsContainer.querySelectorAll('mark.gridjs-highlight');
-        marks.forEach(mark => {
+        marks?.forEach(mark => { // Use optional chaining
             const parent = mark.parentNode;
             if (parent) {
                 // Replace mark with its text content
@@ -112,59 +112,38 @@ function highlightTextNodes(element: Node, regex: RegExp): boolean {
 function applyHighlight(term: string | undefined): void {
     console.log(`ApplyHighlight called with term: "${term}"`);
     // --- Clear existing highlights first ---
-    // Find all existing mark elements
     const marks = elements.gridJsContainer?.querySelectorAll('mark.gridjs-highlight');
     marks?.forEach(mark => {
         const parent = mark.parentNode;
         if (parent) {
-            // Replace the mark with its text content
             parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
-            parent.normalize(); // Merge adjacent text nodes
+            parent.normalize();
         }
     });
     // --- End Clear ---
 
     const searchTerm = term?.trim();
+    updateMinimap(); // Update minimap regardless (clears markers if needed)
 
-    // Update minimap regardless of search term (to clear markers if term is empty)
-    updateMinimap();
-
-    if (!searchTerm || !elements.gridJsContainer) {
-        console.log("Highlight skipped: No search term or grid container.");
-        return; // Exit if no term or container
-    }
-
+    if (!searchTerm || !elements.gridJsContainer) { /* ... skip logic ... */ return; }
     const gridWrapper = elements.gridJsContainer.querySelector<HTMLElement>('.gridjs-wrapper');
-    if (!gridWrapper) {
-        console.error("Highlight skipped: grid wrapper not found.");
-        return;
-    }
+    if (!gridWrapper) { /* ... skip logic ... */ return; }
 
     console.log(`Highlighting with regex for: "${searchTerm}"`);
     try {
         const regex = new RegExp(escapeRegExp(searchTerm), 'gi');
-        // Target only the TD elements for applying highlights
         const tds = gridWrapper.querySelectorAll('td.gridjs-td');
         console.log(`Found ${tds.length} cells to check.`);
         let highlightsAppliedCount = 0;
-
         tds.forEach(td => {
-            // Apply highlighting recursively within each cell
-            if (highlightTextNodes(td, regex)) {
-                highlightsAppliedCount++;
-            }
+            if (highlightTextNodes(td, regex)) { highlightsAppliedCount++; }
         });
         console.log(`Applied highlights within ${highlightsAppliedCount} cells.`);
-    } catch (e) {
-        console.error("Error during highlight processing:", e);
-    }
+    } catch (e) { console.error("Error during highlight processing:", e); }
 
     console.log("Calling updateMinimap after applying highlights.");
-    try {
-        updateMinimap(); // Update minimap based on new highlights
-    } catch (minimapError) {
-        console.error("Error calling updateMinimap:", minimapError);
-    }
+    try { updateMinimap(); } // Update minimap based on new highlights
+    catch (minimapError) { console.error("Error calling updateMinimap:", minimapError); }
 }
 
 /** Updates the Minimap based on highlights */
@@ -173,174 +152,109 @@ function updateMinimap(): void {
     const minimap = elements.minimapContainer;
     const gridWrapper = elements.gridJsContainer.querySelector<HTMLElement>('.gridjs-wrapper');
 
-    // Clear existing markers first
     const existingMarkers = minimap.querySelectorAll('.minimap-marker');
     existingMarkers.forEach(marker => marker.remove());
 
-    if (!gridWrapper) { return; } // Need wrapper to find highlights and scroll height
-    const tableBody = gridWrapper.querySelector<HTMLElement>('.gridjs-tbody'); // Find tbody within wrapper
-    if (!tableBody) { return; } // Need table body for row offsets
+    if (!gridWrapper) { return; }
+    const tableBody = gridWrapper.querySelector<HTMLElement>('.gridjs-tbody');
+    if (!tableBody) { return; }
 
     const scrollHeight = gridWrapper.scrollHeight;
     const minimapHeight = minimap.offsetHeight;
 
-    // If nothing to scroll or minimap isn't visible, exit
     if (scrollHeight <= gridWrapper.clientHeight || minimapHeight <= 0) { return; }
-
-    // Find highlighted elements *within the grid wrapper*
     const highlightedMarks = gridWrapper.querySelectorAll('mark.gridjs-highlight');
-    if (highlightedMarks.length === 0) { return; } // No highlights, no markers needed
+    if (highlightedMarks.length === 0) { return; }
 
-    const processedRows = new Set<HTMLElement>(); // Avoid duplicate markers for same row
-
+    const processedRows = new Set<HTMLElement>();
     highlightedMarks.forEach(mark => {
-        const row = mark.closest('tr'); // Find the parent row
-        if (!(row instanceof HTMLElement) || processedRows.has(row)) { return; } // Skip if not found or already processed
-
+        const row = mark.closest('tr');
+        if (!(row instanceof HTMLElement) || processedRows.has(row)) { return; }
         processedRows.add(row);
-
-        // Calculate the vertical position of the row within the scrollable content
-        const rowOffsetTop = row.offsetTop; // Offset relative to table/tbody
-        const tableBodyOffsetTop = tableBody.offsetTop; // Offset of tbody within wrapper
-        const totalOffset = rowOffsetTop + tableBodyOffsetTop; // Row's position within the scrollable wrapper
-
-        // Calculate the proportional position on the minimap
+        const rowOffsetTop = row.offsetTop;
+        const tableBodyOffsetTop = tableBody.offsetTop;
+        const totalOffset = rowOffsetTop + tableBodyOffsetTop;
         const markerTop = (totalOffset / scrollHeight) * minimapHeight;
-
-        // Create and add the marker element
         const marker = document.createElement('div');
         marker.className = 'minimap-marker';
-        // Clamp marker position to be within minimap bounds (accounting for marker height)
-        marker.style.top = `${Math.max(0, Math.min(markerTop, minimapHeight - 2))}px`; // -2 for marker height
+        marker.style.top = `${Math.max(0, Math.min(markerTop, minimapHeight - 2))}px`;
         minimap.appendChild(marker);
     });
 }
 
 // --- Minimap Drag Handlers ---
-
-/** Handles the initial click on the minimap to start scrolling/dragging. */
 function handleMinimapMouseDown(event: MouseEvent): void {
-    // Ensure the necessary elements exist
     if (!elements.minimapContainer || !elements.gridJsContainer) return;
     const gridWrapper = elements.gridJsContainer.querySelector<HTMLElement>('.gridjs-wrapper');
     if (!gridWrapper) return;
-
-    event.preventDefault(); // Prevent default drag behavior (like text selection)
+    event.preventDefault();
     isDraggingMinimap = true;
-    elements.minimapContainer.classList.add('grabbing'); // Visual feedback: grabbing cursor
-
+    elements.minimapContainer.classList.add('grabbing');
     const rect = elements.minimapContainer.getBoundingClientRect();
-    const mouseY = event.clientY - rect.top; // Click position relative to minimap top
+    const mouseY = event.clientY - rect.top;
     const minimapHeight = elements.minimapContainer.offsetHeight;
     const scrollableHeight = gridWrapper.scrollHeight;
-    const wrapperHeight = gridWrapper.clientHeight; // Visible height of the grid wrapper
-
-    // Calculate initial scroll position based on the click location
-    // Aim to position the view such that the clicked proportion matches the scroll proportion
+    const wrapperHeight = gridWrapper.clientHeight;
     let targetScrollTop = (mouseY / minimapHeight) * (scrollableHeight - wrapperHeight);
-
-    // Clamp the scroll position to valid bounds
     targetScrollTop = Math.max(0, Math.min(targetScrollTop, scrollableHeight - wrapperHeight));
     gridWrapper.scrollTop = targetScrollTop;
-
-
-    // Define global listeners for move and up events
-    // These need to be global so dragging continues even if the cursor leaves the minimap
     globalMouseMoveListener = (moveEvent: MouseEvent) => handleMinimapMouseMove(moveEvent);
     globalMouseUpListener = (upEvent: MouseEvent) => handleMinimapMouseUp(upEvent);
-
-    // Add global listeners
     document.addEventListener('mousemove', globalMouseMoveListener);
     document.addEventListener('mouseup', globalMouseUpListener);
 }
-
-/** Handles mouse movement during minimap drag to update scroll position. */
 function handleMinimapMouseMove(event: MouseEvent): void {
-    // Only run if dragging is active and elements exist
     if (!isDraggingMinimap || !elements.minimapContainer || !elements.gridJsContainer) return;
     const gridWrapper = elements.gridJsContainer.querySelector<HTMLElement>('.gridjs-wrapper');
     if (!gridWrapper) return;
-
     const rect = elements.minimapContainer.getBoundingClientRect();
     const minimapHeight = elements.minimapContainer.offsetHeight;
     const scrollableHeight = gridWrapper.scrollHeight;
     const wrapperHeight = gridWrapper.clientHeight;
-
-    // Calculate current mouse Y relative to minimap top, clamped within its bounds
     let mouseY = event.clientY - rect.top;
-    mouseY = Math.max(0, Math.min(mouseY, minimapHeight)); // Clamp Y to minimap height
-
-    // Calculate target scroll position based on the dragged proportion
+    mouseY = Math.max(0, Math.min(mouseY, minimapHeight));
     let targetScrollTop = (mouseY / minimapHeight) * (scrollableHeight - wrapperHeight);
-
-    // Clamp the scroll position
     targetScrollTop = Math.max(0, Math.min(targetScrollTop, scrollableHeight - wrapperHeight));
-
     gridWrapper.scrollTop = targetScrollTop;
 }
-
-/** Handles mouse button release to stop minimap dragging. */
 function handleMinimapMouseUp(event: MouseEvent): void {
-    if (!isDraggingMinimap) return; // Only run if dragging was active
+    if (!isDraggingMinimap) return;
     isDraggingMinimap = false;
-    elements.minimapContainer?.classList.remove('grabbing'); // Remove grabbing cursor style
-
-    // Remove the global listeners that were added on mousedown
-    if (globalMouseMoveListener) {
-        document.removeEventListener('mousemove', globalMouseMoveListener);
-        globalMouseMoveListener = null; // Clear reference
-    }
-    if (globalMouseUpListener) {
-        document.removeEventListener('mouseup', globalMouseUpListener);
-        globalMouseUpListener = null; // Clear reference
-    }
+    elements.minimapContainer?.classList.remove('grabbing');
+    if (globalMouseMoveListener) { document.removeEventListener('mousemove', globalMouseMoveListener); globalMouseMoveListener = null; }
+    if (globalMouseUpListener) { document.removeEventListener('mouseup', globalMouseUpListener); globalMouseUpListener = null; }
 }
 
-
-/** Attaches event listeners for highlight input and minimap dragging. */
+/** Attaches event listeners */
 function attachListeners(): void {
     console.log("Attaching listeners...");
-
     // Highlight Input Listener
-    if (elements.highlightInput) {
+    if (elements.highlightInput) { /* ... existing highlight listener logic ... */
         const listenerKey = '__debouncedHighlightListener';
-        // Check if listener already exists
         if (!(elements.highlightInput as any)[listenerKey]) {
             const debouncedHighlight = debounce((event: Event) => {
                 const inputElement = event.target as HTMLInputElement;
                 state.highlightTerm = inputElement.value;
-                applyHighlight(state.highlightTerm); // Apply highlight and update minimap
-            }, 250); // Debounce time
-
+                applyHighlight(state.highlightTerm);
+            }, 250);
             elements.highlightInput.addEventListener('input', debouncedHighlight);
-            (elements.highlightInput as any)[listenerKey] = debouncedHighlight; // Store listener reference
+            (elements.highlightInput as any)[listenerKey] = debouncedHighlight;
             console.log("Attached highlight input listener.");
         }
-    } else {
-        console.error("Cannot attach listener: Highlight input element not found.");
-    }
+    } else { console.error("Cannot attach listener: Highlight input element not found."); }
 
     // Minimap Drag Listeners
-    if (elements.minimapContainer) {
+    if (elements.minimapContainer) { /* ... existing minimap listener logic ... */
         const listenerKey = '__minimapMouseDownListener';
-        // Clean up potential previous listener before adding a new one
-        // This helps prevent duplicates if attachListeners is called multiple times
         const existingListener = (elements.minimapContainer as any)[listenerKey];
         if (existingListener) {
             elements.minimapContainer.removeEventListener('mousedown', existingListener);
         }
-
-        // Add the new mousedown listener
         elements.minimapContainer.addEventListener('mousedown', handleMinimapMouseDown);
-        (elements.minimapContainer as any)[listenerKey] = handleMinimapMouseDown; // Store reference
+        (elements.minimapContainer as any)[listenerKey] = handleMinimapMouseDown;
         console.log("Attached minimap mousedown listener.");
-
-        // Set initial cursor style for the minimap
         elements.minimapContainer.style.cursor = 'grab';
-
-    } else {
-        console.error("Cannot attach listener: Minimap container element not found.");
-    }
+    } else { console.error("Cannot attach listener: Minimap container element not found."); }
 }
 
 
@@ -373,7 +287,7 @@ function transformLookerDataForGridJs(
             name: field.label_short || field.label || field.name,
             sort: true,
             resizable: true,
-            // --- Corrected formatter function ---
+            // --- Updated Formatter ---
             formatter: (cellValue: any, gridJsRowObject: any) => {
                 // Find original index and Looker cell data
                 let originalIndex: number | undefined;
@@ -406,12 +320,11 @@ function transformLookerDataForGridJs(
                         initialContent = lookerCell.rendered ?? String(lookerCell.value ?? '[Format Error]');
                         console.error(`Error using Looker htmlForCell for ${field.name}:`, e);
                     }
-                } else if (typeof LookerCharts !== 'undefined' && LookerCharts.Utils?.textForCell) {
+                } else if (!isMeasure && typeof LookerCharts !== 'undefined' && LookerCharts.Utils?.textForCell) {
                     // <<< Use textForCell for dimensions >>>
                     initialContent = LookerCharts.Utils.textForCell(lookerCell);
-                }
-                else {
-                    // Fallback if textForCell isn't available
+                } else {
+                    // Fallback for dimensions if textForCell isn't available, or for measures if htmlForCell fails
                     initialContent = lookerCell.rendered ?? String(lookerCell.value ?? '');
                 }
 
@@ -433,9 +346,9 @@ function transformLookerDataForGridJs(
                                 LookerCharts.Utils.openDrillMenu({ links: lookerCell.links!, event });
                             }
                         };
-                        finalContentString = linkElement.outerHTML;
+                        finalContentString = linkElement.outerHTML; // Assign wrapped
                     } else {
-                        finalContentString = potentialElement.outerHTML; // Use original element HTML
+                        finalContentString = potentialElement.outerHTML; // Assign original element HTML
                     }
                 } else { // It's a string
                     const contentStr = String(initialContent);
@@ -453,7 +366,7 @@ function transformLookerDataForGridJs(
                                 LookerCharts.Utils.openDrillMenu({ links: lookerCell.links!, event });
                             }
                         };
-                        finalContentString = linkElement.outerHTML;
+                        finalContentString = linkElement.outerHTML; // Assign wrapped
                     } else {
                         finalContentString = contentStr; // Use the string directly
                     }
@@ -479,12 +392,13 @@ function transformLookerDataForGridJs(
                     const range = stats.max - stats.min;
                     let relativeValue = 0;
                     if (range > 0) { relativeValue = (value - stats.min) / range; }
-                    else if (value === stats.min) { relativeValue = 0.5; }
+                    else if (value === stats.min) { relativeValue = 0.5; } // Or 1.0 if you want full bar for single value
                     relativeValue = Math.max(0, Math.min(relativeValue, 1));
 
                     // Generate Histogram Bars
-                    const numBars = 10;
-                    const filledBars = Math.max(0, Math.round(relativeValue * numBars));
+                    const numBars = 10; // Number of bars
+                    // Ensure at least one bar is filled if value > min, or handle zero values explicitly if needed
+                    const filledBars = range === 0 ? numBars / 2 : Math.max(0, Math.round(relativeValue * numBars));
                     let barsHtml = '';
                     for (let i = 0; i < numBars; i++) {
                         const filledClass = i < filledBars ? 'sparkline-hist-bar--filled' : '';
@@ -497,11 +411,12 @@ function transformLookerDataForGridJs(
                         </span>
                     `;
                     // <<< Add log to confirm generation >>>
-                    console.log(`>>> Generated sparkline HTML for ${field.name}`);
+                    // Log only once per column type for brevity
+                    if (!(window as any)[`__logged_sparkline_gen_${field.name}`]) {
+                        console.log(`>>> Generated sparkline HTML for ${field.name}`);
+                        (window as any)[`__logged_sparkline_gen_${field.name}`] = true;
+                    }
 
-                } else if (isMeasure && config?.showMeasureSparklines) {
-                    // Optional: Log why sparkline was skipped for a measure if option is on
-                    // console.log(`--- Skipped sparkline for ${field.name} (Value: ${cellVal}, Type: ${typeof cellVal}, MinMax: ${!!(measureMinMax && measureMinMax[field.name])})`);
                 }
                 // --- End Sparkline Logic ---
 
@@ -692,4 +607,3 @@ const grabbingStyle = document.createElement('style');
 grabbingStyle.textContent = ` #gridjs-minimap.grabbing { cursor: grabbing !important; } `;
 if (document.head) { document.head.appendChild(grabbingStyle); }
 else { document.addEventListener('DOMContentLoaded', () => { document.head.appendChild(grabbingStyle); }); }
-

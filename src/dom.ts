@@ -326,31 +326,31 @@ export function setupHTML(visElement: HTMLElement): void {
         box-shadow: 0 0 0 1px #ffd700; /* Subtle outline */
       }
 
-      /* Sparkline Styles - Updated for Histogram */
+        /* Sparkline Styles - Histogram */
       .sparkline-container {
-          display: inline-flex; /* Arrange bars horizontally */
-          align-items: flex-end; /* Align bars to bottom */
-          /* width: 50px; */ /* Width determined by bars inside */
-          height: 16px; /* Overall height */
-          /* background-color: #333; */ /* Remove container background */
-          /* border: 1px solid #555; */ /* Remove container border */
-          margin-left: 8px;
-          vertical-align: middle;
-          gap: 1px; /* Space between bars */
-          position: relative;
-          box-sizing: border-box;
+          display: inline-flex !important; /* <<< Use important for debugging */
+          align-items: flex-end !important;
+          height: 16px !important;
+          margin-left: 8px !important;
+          vertical-align: middle !important;
+          gap: 1px !important;
+          position: relative !important; /* Use relative to ensure it's in flow */
+          box-sizing: border-box !important;
+          border: 1px solid red !important; /* <<< Add border for debugging visibility */
       }
 
-      .sparkline-hist-bar { /* Style for individual bars */
-          display: block;
-          width: 3px; /* <<< Width of each bar */
-          background-color: #444; /* <<< Default color for empty part */
-          /* height is set via inline style */
-          box-sizing: border-box;
-          flex-shrink: 0;
+      .sparkline-hist-bar {
+          display: block !important; /* <<< Use important */
+          width: 3px !important; /* <<< Use important */
+          /* <<< Remove base height, rely on background color */
+          /* height: 1px; */
+          background-color: var(--sparkline-bar-empty) !important; /* Use variable */
+          flex-shrink: 0 !important;
+          /* align-self: flex-end; */ /* Removed */
       }
-      .sparkline-hist-bar--filled { /* Modifier for filled bars */
-         background-color: #66f; /* <<< Active bar color */
+      .sparkline-hist-bar--filled {
+         background-color: var(--sparkline-bar-filled) !important; /* Use variable */
+         height: 100% !important; /* <<< Use important */
       }
       /* <<< End Sparkline Styles >>> */
 
