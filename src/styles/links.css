@@ -1,0 +1,30 @@
+/* src/styles/links.css */
+
+/* Style for drillable links created by our code */
+td.gridjs-td .drillable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--link-color-default); /* Use variable */
+  color: var(--link-color-default); /* Use variable */
+}
+td.gridjs-td .drillable:hover {
+  text-decoration-color: var(--link-color-hover); /* Use variable */
+  color: var(--link-color-hover); /* Use variable */
+  background-color: rgba(100, 100, 255, 0.1); /* Subtle hover background */
+}
+
+/* Style for ALL links (<a> tags) within table cells */
+td.gridjs-td a {
+    color: var(--link-color-default); /* Use variable */
+    text-decoration: underline;
+    text-decoration-color: var(--link-color-default); /* Use variable */
+}
+td.gridjs-td a:visited {
+    color: var(--link-color-visited); /* Use variable */
+    text-decoration-color: var(--link-color-visited); /* Use variable */
+}
+td.gridjs-td a:hover,
+td.gridjs-td a:focus {
+    color: var(--link-color-hover); /* Use variable */
+    text-decoration-color: var(--link-color-hover); /* Use variable */
+}

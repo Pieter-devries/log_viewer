@@ -1,0 +1,10 @@
+/* src/styles/highlight.css */
+
+/* Highlight Style within table cells */
+mark.gridjs-highlight {
+  background-color: #ffd700; /* Yellow highlight */
+  color: black; /* Text color on highlight */
+  padding: 0;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px #ffd700; /* Subtle outline */
+}

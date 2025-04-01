@@ -1,6 +1,4 @@
-// types.ts
-
-// Use the official Looker types provided by the user, with corrections
+// src/core/types.ts
 
 // API Globals
 export interface Looker {
@@ -53,12 +51,11 @@ export interface VisQueryResponse {
     [key: string]: any
     data: VisData
     fields: {
-        // <<< Use specific optional properties instead of index signature >>>
+        // Use specific optional properties instead of index signature
         dimensions?: Field[]
         measures?: Field[]
         pivots?: Field[]
         table_calculations?: Field[]
-        // Remove: [key: string]: any[] // <<< REMOVED to fix TS(2411)
     }
     pivots?: Pivot[] // Make optional based on usage
 }
@@ -161,5 +158,20 @@ export interface VisualizationError {
 
 // --- State & Elements Interfaces ---
 export interface MeasureMinMax { min: number; max: number; }
-export interface VisState { originalData: Row[]; queryResponse: VisQueryResponse | null; config: VisConfig | null; gridInstance: any | null; highlightTerm?: string; measureMinMax?: Record<string, MeasureMinMax>; }
-export interface VisElements { visElement: HTMLElement | null; gridJsContainer: HTMLElement | null; highlightInput: HTMLInputElement | null; minimapContainer: HTMLElement | null; }
+// Make VisState exportable if needed by multiple modules, otherwise keep internal
+export interface VisState {
+    originalData: Row[]; // Use Row[] which is VisData
+    queryResponse: VisQueryResponse | null;
+    config: VisConfig | null;
+    gridInstance: any | null; // Grid.js instance type
+    highlightTerm?: string;
+    measureMinMax?: Record<string, MeasureMinMax>;
+}
+
+// Make VisElements exportable
+export interface VisElements {
+    visElement: HTMLElement | null;
+    gridJsContainer: HTMLElement | null;
+    highlightInput: HTMLInputElement | null;
+    minimapContainer: HTMLElement | null;
+}

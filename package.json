@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "@looker/visualizations": "^1.1.5",
-    "gridjs": "^6.2.0"
+    "css-loader": "^7.1.2",
+    "gridjs": "^6.2.0",
+    "style-loader": "^4.0.0"
   }
 }

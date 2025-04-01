@@ -1,0 +1,26 @@
+/* src/styles/sparkline.css */
+
+.sparkline-container {
+    display: inline-block;      /* Display next to text */
+    position: relative;
+    width: 8px;                 /* Fixed width */
+    height: 16px;               /* Fixed height */
+    background-color: var(--sparkline-bar-empty); /* Container provides the 'empty' background */
+    margin-left: 8px;
+    vertical-align: middle;
+    border-radius: 1px;
+    overflow: hidden;
+    box-sizing: border-box;
+    flex-shrink: 0;             /* Prevent shrinking if parent is flex */
+    /* border: 1px solid lime; */ /* Remove debug border */
+}
+
+.sparkline-bar { /* The single filled bar */
+    display: block;
+    position: absolute;
+    bottom: 0;                  /* Align to bottom */
+    left: 0;
+    width: 100%;                /* Full width of container */
+    background-color: var(--sparkline-bar-filled); /* Filled color */
+    /* Height is set via inline style in JS */
+}

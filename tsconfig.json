@@ -24,7 +24,7 @@
     // Specifies which files TypeScript should compile
     "include": [
         "src/**/*" // Include all files within the 'src' directory and its subdirectories
-    ],
+],
     // Specifies files/directories TypeScript should NOT compile
     "exclude": [
         "node_modules", // Always exclude node_modules
