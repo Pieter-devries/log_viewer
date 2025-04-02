@@ -1,29 +1,71 @@
 /* src/styles/gridjs-theme.css */
-/* Contains custom overrides and theming for Grid.js elements */
-/* It should NOT override fundamental display properties like table-cell */
+/* DEBUGGING VERSION: Most rules commented out. */
+/* Only essential dark theme colors are active. */
 
-/* Header, Footer, Wrapper positioning relative to #gridjs-container */
-.gridjs-head {
-  flex-shrink: 0;
-  height: var(--gridjs-header-height); /* Use variable from main.css */
-  position: relative;
-  z-index: 1;
-  border-bottom: 1px solid #555; /* Custom border */
-  box-sizing: border-box;
-  padding-top: 0;
-  /* Base theme might have margin, adjust if needed */
-  /* margin-bottom: 5px; */
-  background-color: #1a1a1a; /* Custom background */
-  color: #eee; /* Custom text color */
+/* Apply dark background and light text to core elements */
+.gridjs-wrapper {
+    background-color: black !important; /* Ensure dark background */
+    border: none !important; /* Override base theme borders */
+    border-radius: 0 !important;
 }
-.gridjs-search {
-  position: absolute;
-  top: 5px;
-  left: 8px;
+
+.gridjs-tbody {
+    background-color: black !important;
 }
+
+.gridjs-tr:nth-child(even) td.gridjs-td {
+     background-color: #111 !important; /* Slightly lighter for even rows */
+}
+.gridjs-tr:nth-child(odd) td.gridjs-td {
+     background-color: black !important; /* Dark for odd rows */
+}
+
+
+td.gridjs-td {
+    color: #ddd !important; /* Light text */
+    border: none !important; /* Override base theme borders */
+    border-bottom: 1px dotted #444 !important; /* Keep custom border */
+    padding: 4px 10px !important; /* Keep custom padding */
+    /* Ensure NO display or layout properties here */
+    vertical-align: top; /* Keep alignment */
+    box-sizing: border-box;
+ }
+
+th.gridjs-th {
+  background-color: #1a1a1a !important; /* Dark header background */
+  color: #eee !important; /* Light header text */
+  border: none !important;
+  border-right: 1px solid #333 !important;
+  border-bottom: 1px solid #555 !important;
+  padding: 8px 10px !important;
+  /* Ensure NO display or layout properties here */
+  white-space: nowrap;
+  text-align: left;
+  font-weight: bold;
+  vertical-align: middle;
+  user-select: none;
+}
+th.gridjs-th:last-child {
+  border-right: none !important;
+}
+
+.gridjs-footer {
+    background-color: #1c1c1c !important;
+    border-top: 1px solid #555 !important;
+    color: #aaa !important;
+    /* Remove other properties temporarily */
+     height: var(--gridjs-footer-height);
+     padding: 5px 10px;
+     box-shadow: none;
+}
+.gridjs-footer:empty {
+  height: 0;
+  padding: 0;
+  border: none;
+}
+
+/* Keep search input styles if they don't affect layout */
 input.gridjs-input.gridjs-search-input {
-  width: 200px;
-  /* Use styles defined in main.css for consistency */
   background-color: #2a2a2a;
   border: 1px solid #444;
   color: #ddd;
@@ -38,122 +80,75 @@ input.gridjs-input.gridjs-search-input:focus {
     outline: none;
 }
 
+/* Comment out potentially problematic rules below */
 
-.gridjs-footer {
-    flex-shrink: 0;
-    height: var(--gridjs-footer-height);
-    position: relative;
-    z-index: 1;
-    background-color: #1c1c1c; /* Custom background */
-    border-top: 1px solid #555; /* Custom border */
-    box-shadow: none; /* Override base theme shadow if needed */
-    padding: 5px 10px;
-    color: #aaa;
-    box-sizing: border-box;
-}
-.gridjs-footer:empty {
-  height: 0;
-  padding: 0;
-  border: none;
-}
 
-/* Style the main scrollable wrapper if needed (already positioned in main.css) */
-.gridjs-wrapper {
-    background-color: black; /* Ensure background matches */
-    /* Base theme might add borders/radii, override if needed */
-    border: none;
-    border-radius: 0;
-}
-
-/* Table and TH styles */
-table.gridjs-table {
-  /* Base theme likely sets display: table; let it */
-  border-collapse: collapse;
-  text-align: left;
-  width: 100%;
-  table-layout: fixed;
-}
-th.gridjs-th {
-  background-color: #1a1a1a; /* Custom header background */
-  color: #eee; /* Custom header text */
-  border: none; /* Override base theme borders */
-  border-right: 1px solid #333; /* Custom border */
-  border-bottom: 1px solid #555; /* Custom border */
-  padding: 8px 10px;
-  font-weight: bold;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  position: sticky !important; /* Keep sticky */
-  top: 0 !important;
-  z-index: 2 !important;
+.gridjs-head {
+  flex-shrink: 0;
+  height: var(--gridjs-header-height);
+  position: relative;
+  z-index: 1;
   box-sizing: border-box;
-  vertical-align: middle;
-  user-select: none;
+  padding-top: 0;
 }
-th.gridjs-th:last-child {
-  border-right: none;
-}
-th.gridjs-th-fixed {
-  background-color: #1a1a1a; /* Ensure fixed header matches */
-}
-th.gridjs-th .gridjs-th-content {
-  float: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
+.gridjs-search {
+  position: absolute;
+  top: 5px;
+  left: 8px;
 }
 
-/* Sort Indicator Styles (Keep custom overrides) */
+th.gridjs-th-fixed { background-color: #1a1a1a; }
+th.gridjs-th .gridjs-th-content { float: left; overflow: hidden; text-overflow: ellipsis; width: 100%; }
 th.gridjs-th-sort { cursor: pointer; position: relative; }
 th.gridjs-th-sort:focus,
 th.gridjs-th-sort:hover { background-color: #333 !important; }
 th.gridjs-th-sort .gridjs-th-content { width: calc(100% - 25px); }
-button.gridjs-sort { background: none !important; border: none !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; float: right; height: 100%; width: 20px; cursor: pointer; vertical-align: middle; opacity: 0; position: absolute; right: 5px; top: 0; }
-th.gridjs-th-sort::after { content: ''; display: block; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; opacity: 0.4; pointer-events: none; }
-th.gridjs-th-sort[aria-sort="none"]::after,
-th.gridjs-th-sort:not([aria-sort])::after { opacity: 0.2; border-top: 0; border-bottom: 0; }
-th.gridjs-th-sort[aria-sort="ascending"]::after { border-bottom: 6px solid #eee; border-top: 0; opacity: 1; }
-th.gridjs-th-sort[aria-sort="descending"]::after { border-top: 6px solid #eee; border-bottom: 0; opacity: 1; }
+button.gridjs-sort { /* Style the hidden button if needed */ }
 
-/* Resizer Styles */
+/* Base sort arrow style (neutral state) */
+th.gridjs-th-sort::after {
+    content: ''; display: block; position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%); width: 0; height: 0;
+    border-left: 5px solid transparent; border-right: 5px solid transparent;
+    opacity: 0.3; /* <<< Slightly more visible neutral state */
+    pointer-events: none;
+    /* Ensure base color is transparent or matches background if needed */
+     border-top-color: transparent;
+     border-bottom-color: transparent;
+}
+/* Style for unsorted state (matches neutral) */
+th.gridjs-th-sort[aria-sort="none"]::after,
+th.gridjs-th-sort:not([aria-sort])::after {
+     opacity: 0.3;
+     border-top: 0; /* Explicitly remove potential borders */
+     border-bottom: 0;
+}
+/* Style for ascending sort arrow */
+th.gridjs-th-sort[aria-sort="ascending"]::after {
+    border-bottom: 6px solid #ccc; /* <<< Lighter color */
+    border-top: 0;
+    opacity: 1;
+}
+/* Style for descending sort arrow */
+th.gridjs-th-sort[aria-sort="descending"]::after {
+    border-top: 6px solid #ccc; /* <<< Lighter color */
+    border-bottom: 0;
+    opacity: 1;
+}
 .gridjs-resizable { position: absolute !important; top: 0; bottom: 0; right: -5px; width: 10px; cursor: ew-resize; z-index: 3 !important; }
 .gridjs-resizable:hover { background-color: rgba(100, 100, 255, 0.5) !important; }
-
-/* Table Body & Cells */
-.gridjs-tbody { background-color: black; z-index: 0; }
+.gridjs-tbody { z-index: 0; }
 .gridjs-tr { border: none; }
-.gridjs-tr:nth-child(odd) { background-color: black; }
-.gridjs-tr:nth-child(even) { background-color: #111; }
-
-td.gridjs-td {
-    color: #ddd;
-    padding: 4px 10px;
-    border: none; /* Override base theme border if needed */
-    border-bottom: 1px dotted #444; /* Custom border */
-    /* <<< NO 'display' property here >>> */
-    line-height: 1.5;
-    white-space: normal;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    box-sizing: border-box;
-    vertical-align: top; /* Or middle */
+.cell-value {
+     flex-grow: 1;
+     overflow: hidden;
+     text-overflow: ellipsis;
+     white-space: normal;
  }
-
- /* Style for the value part of the cell */
- .cell-value {
-     display: inline; /* Treat as inline text by default */
-     margin-right: 5px; /* Space before sparkline */
-     /* Add max-width / overflow / ellipsis here if you want truncation */
- }
-
- /* Style for messages like 'Loading...' or 'No data' */
- td.gridjs-message {
+td.gridjs-message {
    text-align: center;
    padding: 15px;
    color: #aaa;
-   background-color: black;
-   /* Ensure it behaves like a table cell */
    display: table-cell !important;
  }
+

@@ -1,86 +1,57 @@
 // src/ui/minimap.ts
 import { elements } from '../core/state';
 
-// --- State for Minimap Dragging (Internal to this module) ---
+// State for Minimap Dragging (Internal)
 let isDraggingMinimap = false;
 let globalMouseMoveListener: ((event: MouseEvent) => void) | null = null;
 let globalMouseUpListener: ((event: MouseEvent) => void) | null = null;
 
 /**
- * Updates the position markers on the minimap based on highlighted elements in the grid.
+ * Updates minimap markers based on highlights.
  */
 export function updateMinimap(): void {
-    // Ensure necessary elements exist
-    if (!elements.minimapContainer || !elements.gridJsContainer) {
-        console.warn("updateMinimap skipped: Minimap or Grid container not found.");
-        return;
-    }
+    if (!elements.minimapContainer || !elements.gridJsContainer) { return; }
     const minimap = elements.minimapContainer;
     const gridWrapper = elements.gridJsContainer.querySelector<HTMLElement>('.gridjs-wrapper');
 
-    // Clear existing markers first
     const existingMarkers = minimap.querySelectorAll('.minimap-marker');
     existingMarkers.forEach(marker => marker.remove());
 
-    if (!gridWrapper) {
-        console.warn("updateMinimap skipped: Grid wrapper not found.");
-        return;
-    }
+    if (!gridWrapper) { return; }
     const tableBody = gridWrapper.querySelector<HTMLElement>('.gridjs-tbody');
-    if (!tableBody) {
-        console.warn("updateMinimap skipped: Table body not found.");
-        return;
-    }
+    if (!tableBody) { return; }
 
-    const scrollHeight = gridWrapper.scrollHeight; // Total scrollable height
-    const clientHeight = gridWrapper.clientHeight; // Visible height
-    const minimapHeight = minimap.offsetHeight; // Height of the minimap element
+    const scrollHeight = gridWrapper.scrollHeight;
+    const clientHeight = gridWrapper.clientHeight;
+    const minimapHeight = minimap.offsetHeight;
 
-    // If content doesn't overflow or minimap has no height, no markers needed
-    if (scrollHeight <= clientHeight || minimapHeight <= 0) {
-        return;
-    }
+    // <<< Log scroll heights for debugging >>>
+    console.log(`updateMinimap - Scroll Heights: scrollH=${scrollHeight}, clientH=${clientHeight}`);
 
-    // Find highlighted elements *within the grid wrapper*
-    // This assumes highlights are marked with <mark class="gridjs-highlight">
+    if (scrollHeight <= clientHeight || minimapHeight <= 0) { return; }
     const highlightedMarks = gridWrapper.querySelectorAll('mark.gridjs-highlight');
-    if (highlightedMarks.length === 0) {
-        // console.log("updateMinimap: No highlights found, clearing markers."); // Optional log
-        return; // No highlights, no markers needed
-    }
+    if (highlightedMarks.length === 0) { return; }
 
-    const processedRows = new Set<HTMLElement>(); // Avoid duplicate markers for same row
-
+    const processedRows = new Set<HTMLElement>();
     highlightedMarks.forEach(mark => {
-        const row = mark.closest('tr'); // Find the parent table row
-        if (!(row instanceof HTMLElement) || processedRows.has(row)) {
-            return; // Skip if not a valid row or already processed
-        }
+        const row = mark.closest('tr');
+        if (!(row instanceof HTMLElement) || processedRows.has(row)) { return; }
         processedRows.add(row);
-
-        // Calculate the vertical position of the row within the scrollable content
-        const rowOffsetTop = row.offsetTop; // Offset relative to table/tbody
-        const tableBodyOffsetTop = tableBody.offsetTop; // Offset of tbody within wrapper
-        const totalOffset = rowOffsetTop + tableBodyOffsetTop; // Row's top position within the scrollable wrapper
-
-        // Calculate the proportional position on the minimap
-        // markerTop represents the top position of the marker on the minimap track
+        const rowOffsetTop = row.offsetTop;
+        const tableBodyOffsetTop = tableBody.offsetTop;
+        const totalOffset = rowOffsetTop + tableBodyOffsetTop;
         const markerTop = (totalOffset / scrollHeight) * minimapHeight;
-
-        // Create and add the marker element
         const marker = document.createElement('div');
-        marker.className = 'minimap-marker'; // Use class from main.css or equivalent
-        // Clamp marker position to be within minimap bounds (accounting for marker height ~2px)
+        marker.className = 'minimap-marker';
         marker.style.top = `${Math.max(0, Math.min(markerTop, minimapHeight - 2))}px`;
         minimap.appendChild(marker);
     });
-    // console.log(`updateMinimap: Added markers for ${processedRows.size} rows.`); // Optional log
 }
 
 
 // --- Minimap Drag Handlers ---
 
-/** Handles the initial click on the minimap to start scrolling/dragging. */
+/** Handles mousedown on minimap */
 export function handleMinimapMouseDown(event: MouseEvent): void {
     if (!elements.minimapContainer || !elements.gridJsContainer) return;
     const gridWrapper = elements.gridJsContainer.querySelector<HTMLElement>('.gridjs-wrapper');
@@ -88,29 +59,42 @@ export function handleMinimapMouseDown(event: MouseEvent): void {
 
     event.preventDefault();
     isDraggingMinimap = true;
-    elements.minimapContainer.classList.add('grabbing'); // Add grabbing cursor style
+    elements.minimapContainer.classList.add('grabbing');
+
+    // <<< Log scroll heights on click >>>
+    const scrollHeight = gridWrapper.scrollHeight;
+    const clientHeight = gridWrapper.clientHeight;
+    console.log(`Minimap MouseDown: scrollH=${scrollHeight}, clientH=${clientHeight}`);
+
+    // Check if scrolling is actually possible
+    if (scrollHeight <= clientHeight) {
+        console.log("Minimap MouseDown: No scrolling needed (scrollHeight <= clientHeight).");
+        isDraggingMinimap = false; // Reset state
+        elements.minimapContainer.classList.remove('grabbing');
+        return; // Don't attach listeners if no scroll needed
+    }
 
     const rect = elements.minimapContainer.getBoundingClientRect();
     const mouseY = event.clientY - rect.top;
     const minimapHeight = elements.minimapContainer.offsetHeight;
-    const scrollableHeight = gridWrapper.scrollHeight;
-    const wrapperHeight = gridWrapper.clientHeight;
 
-    // Calculate initial scroll position
-    let targetScrollTop = (mouseY / minimapHeight) * (scrollableHeight - wrapperHeight);
-    targetScrollTop = Math.max(0, Math.min(targetScrollTop, scrollableHeight - wrapperHeight));
+    let targetScrollTop = (mouseY / minimapHeight) * (scrollHeight - clientHeight);
+    targetScrollTop = Math.max(0, Math.min(targetScrollTop, scrollHeight - clientHeight));
+
+    console.log(`Minimap MouseDown: Attempting to set scrollTop to ${targetScrollTop}`);
     gridWrapper.scrollTop = targetScrollTop;
+    // <<< Log scrollTop *after* setting it >>>
+    console.log(`Minimap MouseDown: scrollTop is now ${gridWrapper.scrollTop}`);
 
-    // Define global listeners
-    globalMouseMoveListener = (moveEvent: MouseEvent) => handleMinimapMouseMove(moveEvent);
-    globalMouseUpListener = (upEvent: MouseEvent) => handleMinimapMouseUp(upEvent);
 
     // Add global listeners
+    globalMouseMoveListener = (moveEvent: MouseEvent) => handleMinimapMouseMove(moveEvent);
+    globalMouseUpListener = (upEvent: MouseEvent) => handleMinimapMouseUp(upEvent);
     document.addEventListener('mousemove', globalMouseMoveListener);
     document.addEventListener('mouseup', globalMouseUpListener);
 }
 
-/** Handles mouse movement during minimap drag. */
+/** Handles mousemove during drag */
 function handleMinimapMouseMove(event: MouseEvent): void {
     if (!isDraggingMinimap || !elements.minimapContainer || !elements.gridJsContainer) return;
     const gridWrapper = elements.gridJsContainer.querySelector<HTMLElement>('.gridjs-wrapper');
@@ -118,31 +102,27 @@ function handleMinimapMouseMove(event: MouseEvent): void {
 
     const rect = elements.minimapContainer.getBoundingClientRect();
     const minimapHeight = elements.minimapContainer.offsetHeight;
-    const scrollableHeight = gridWrapper.scrollHeight;
-    const wrapperHeight = gridWrapper.clientHeight;
+    const scrollHeight = gridWrapper.scrollHeight;
+    const clientHeight = gridWrapper.clientHeight;
+
+    if (scrollHeight <= clientHeight) return; // Extra safety check
 
     let mouseY = event.clientY - rect.top;
     mouseY = Math.max(0, Math.min(mouseY, minimapHeight)); // Clamp Y
 
-    let targetScrollTop = (mouseY / minimapHeight) * (scrollableHeight - wrapperHeight);
-    targetScrollTop = Math.max(0, Math.min(targetScrollTop, scrollableHeight - wrapperHeight)); // Clamp scroll
+    let targetScrollTop = (mouseY / minimapHeight) * (scrollHeight - clientHeight);
+    targetScrollTop = Math.max(0, Math.min(targetScrollTop, scrollHeight - clientHeight)); // Clamp scroll
 
     gridWrapper.scrollTop = targetScrollTop;
+    // console.log(`Minimap MouseMove: scrollTop set to ${targetScrollTop}`); // Optional verbose log
 }
 
-/** Handles mouse button release to stop minimap dragging. */
+/** Handles mouseup to end drag */
 function handleMinimapMouseUp(event: MouseEvent): void {
     if (!isDraggingMinimap) return;
     isDraggingMinimap = false;
-    elements.minimapContainer?.classList.remove('grabbing'); // Remove grabbing cursor style
-
-    // Remove global listeners
-    if (globalMouseMoveListener) {
-        document.removeEventListener('mousemove', globalMouseMoveListener);
-        globalMouseMoveListener = null;
-    }
-    if (globalMouseUpListener) {
-        document.removeEventListener('mouseup', globalMouseUpListener);
-        globalMouseUpListener = null;
-    }
+    elements.minimapContainer?.classList.remove('grabbing');
+    if (globalMouseMoveListener) { document.removeEventListener('mousemove', globalMouseMoveListener); globalMouseMoveListener = null; }
+    if (globalMouseUpListener) { document.removeEventListener('mouseup', globalMouseUpListener); globalMouseUpListener = null; }
+    console.log("Minimap MouseUp: Drag ended, listeners removed.");
 }
