@@ -4,10 +4,13 @@
   "description": "",
   "main": "dist/log-viewer.js",
   "scripts": {
-    "build": "webpack --mode production",
+    "build": "webpack --mode development", 
+    "build:dev_deploy": "yarn build && gsutil -h \"Cache-Control:no-cache, max-age=0\" cp dist/log-viewer.js gs://custom-looker-visualizations-dcl/log-viewer.js",
+    "debug": "webpack --mode development --profile --json > stats.json",
     "dev": "webpack serve --mode development",
     "start": "webpack serve --mode development",
-    "build:deploy": "yarn build && gsutil -h \"Cache-Control:no-cache, max-age=0\" cp dist/log-viewer.js gs://custom-looker-visualizations-dcl/log-viewer.js"
+    "build:deploy": "yarn build:prod && gsutil -h \"Cache-Control:no-cache, max-age=0\" cp dist/log-viewer.js gs://custom-looker-visualizations-dcl/log-viewer.js",
+    "build:prod": "webpack --mode production" 
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

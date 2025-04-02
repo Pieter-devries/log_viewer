@@ -2,12 +2,18 @@
 import { visDefinition } from './visualization';
 import { Looker } from './core/types';
 
-// <<< ADD Import for base Grid.js theme FIRST >>>
-import 'gridjs/dist/theme/mermaid.css'; // Or genesis.css if you prefer that base
+// <<< Add a direct import test >>>
+import * as layoutTest from './ui/layout';
+console.log("--- TEST: Direct import of layout module in index.ts:", layoutTest);
+// <<< End direct import test >>>
+
+
+// Import the base Grid.js Mermaid theme FIRST
+import 'gridjs/dist/theme/mermaid.css';
 
 // Import custom styles AFTER the base theme
 import './styles/main.css';
-import './styles/gridjs-theme.css'; // Your overrides and specific styles
+import './styles/gridjs-theme.css';
 import './styles/links.css';
 import './styles/sparkline.css';
 import './styles/highlight.css';
@@ -24,7 +30,7 @@ if (looker && looker.plugins && looker.plugins.visualizations) {
     console.error("Looker environment not found. Visualization not registered.");
 }
 
-// Optional: Add CSS for the grabbing cursor dynamically if not in main.css
+// Optional: Add CSS for the grabbing cursor dynamically
 const grabbingStyle = document.createElement('style');
 grabbingStyle.textContent = ` #gridjs-minimap.grabbing { cursor: grabbing !important; } `;
 if (document.head) { document.head.appendChild(grabbingStyle); }

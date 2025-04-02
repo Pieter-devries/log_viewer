@@ -1,6 +1,6 @@
 // src/core/types.ts
 
-// API Globals
+// API Globals (Based on official types provided)
 export interface Looker {
     plugins: {
         visualizations: {
@@ -15,19 +15,11 @@ export interface LookerChartUtils {
         openUrl: (url: string, event: object) => void
         textForCell: (cell: Cell) => string
         filterableValueForCell: (cell: Cell) => string
-        htmlForCell: (cell: Cell, context?: string, fieldDefinitionForCell?: any, customHtml?: string) => string
+        htmlForCell: (cell: Cell, context?: string, fieldDefinitionForCell?: Field, customHtml?: string) => string // Added Field type hint
     }
 }
-/**
- * Minimal representation of a Crossfilter action
- */
-export interface Crossfilter {
-    field: string
-    values: string[]
-    range?: [string, string]
-}
 
-// Looker visualization types
+// Looker visualization types (Based on official types provided)
 export interface VisualizationDefinition {
     id?: string
     label?: string
@@ -35,45 +27,54 @@ export interface VisualizationDefinition {
     addError?: (error: VisualizationError) => void
     clearErrors?: (errorName?: string) => void
     create: (element: HTMLElement, settings: VisConfig) => void
-    onCrossfilter?: (crossfilters: Crossfilter[], event: Event | null) => void,
-    trigger?: (event: string, config: object[]) => void // Keep trigger definition
-    update?: (data: VisData, element: HTMLElement, config: VisConfig, queryResponse: VisQueryResponse, details?: VisUpdateDetails) => void
+    trigger?: (event: string, config: object[]) => void
     updateAsync?: (data: VisData, element: HTMLElement, config: VisConfig, queryResponse: VisQueryResponse, details: VisUpdateDetails | undefined, updateComplete: () => void) => void
     destroy?: () => void
+    // Add other methods like update if needed
+    [key: string]: any; // Allow other properties Looker might add
 }
 
 export interface VisOptions { [optionName: string]: VisOption }
 
 export interface VisOptionValue { [label: string]: string }
 
-// Use the official VisQueryResponse structure, fixing the 'fields' definition
 export interface VisQueryResponse {
     [key: string]: any
     data: VisData
     fields: {
-        // Use specific optional properties instead of index signature
+        // Use specific optional properties
         dimensions?: Field[]
         measures?: Field[]
         pivots?: Field[]
         table_calculations?: Field[]
     }
-    pivots?: Pivot[] // Make optional based on usage
+    pivots?: Pivot[]
 }
 
-// Define Field based on usage and official types context
+// Define Field based on usage and available properties
 export interface Field {
     name: string;
     label: string;
     label_short?: string;
     // is_measure: boolean; // Removed as unreliable
-    type?: string;
+    type?: string; // e.g., 'number', 'string', 'date_date', etc.
     value_format?: string | null;
     can_filter?: boolean;
-    category?: 'dimension' | 'measure'; // Add category if available
+    category?: 'dimension' | 'measure'; // Often available
     align?: string;
     description?: string;
-    default_filter_value?: any;
-    // Add other field properties if needed
+    tags?: string[];
+    // Add other potentially useful properties
+    view?: string;
+    view_label?: string;
+    suggest_dimension?: string;
+    suggest_explore?: string;
+    suggestable?: boolean;
+    is_numeric?: boolean;
+    is_filterable?: boolean;
+    is_fiscal?: boolean;
+    is_timeframe?: boolean;
+    // ... any other properties observed from console logs
 }
 
 
@@ -92,31 +93,27 @@ export interface Link {
 }
 
 export interface Cell {
-    [key: string]: any
+    [key: string]: any // Allow other properties Looker might add to cells
     value: any
     rendered?: string
     html?: string
     links?: Link[]
 }
 
-export interface FilterData {
-    add: string
-    field: string
-    rendered: string
+export type VisData = Row[] // Alias for clarity
+
+export interface Row {
+    [fieldName: string]: Cell | PivotCell // Looker data rows map field names to Cells (or PivotCells if pivoted)
 }
 
+// Define PivotCell based on official types (though likely not used in this vis)
 export interface PivotCell {
     [pivotKey: string]: Cell
 }
 
-export interface Row {
-    [fieldName: string]: PivotCell | Cell
-}
-
-export type VisData = Row[]
 
 export interface VisConfig {
-    [key: string]: VisConfigValue
+    [key: string]: any // Config object holds option values
 }
 
 export type VisConfigValue = any
@@ -158,7 +155,7 @@ export interface VisualizationError {
 
 // --- State & Elements Interfaces ---
 export interface MeasureMinMax { min: number; max: number; }
-// Make VisState exportable if needed by multiple modules, otherwise keep internal
+
 export interface VisState {
     originalData: Row[]; // Use Row[] which is VisData
     queryResponse: VisQueryResponse | null;
@@ -168,7 +165,6 @@ export interface VisState {
     measureMinMax?: Record<string, MeasureMinMax>;
 }
 
-// Make VisElements exportable
 export interface VisElements {
     visElement: HTMLElement | null;
     gridJsContainer: HTMLElement | null;

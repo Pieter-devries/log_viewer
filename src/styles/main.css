@@ -1,114 +1,60 @@
-    /* src/styles/main.css */
-    /* Contains overall layout, containers, CSS variables, scrollbars, minimap */
+/* src/styles/main.css */
+:root {
+  /* Keep variables */
+  --gridjs-header-height: 40px;
+  --gridjs-footer-height: 5px; /* Keep small */
+  --gridjs-minimap-width: 15px;
+  --gridjs-minimap-gap: 2px;
+  --gridjs-container-padding-right: calc(var(--gridjs-minimap-width) + var(--gridjs-minimap-gap));
+  --link-color-default: #9bf; --link-color-visited: #a9d; --link-color-hover: #bff;
+  --sparkline-bar-filled: #8af; --sparkline-bar-empty: #555;
+}
 
-    :root {
-      --gridjs-header-height: 40px; /* Or your final value */
-      --gridjs-footer-height: 5px;  /* Or your final value */
-      --gridjs-minimap-width: 15px;
-      --gridjs-minimap-gap: 2px;
-      --gridjs-container-padding-right: calc(var(--gridjs-minimap-width) + var(--gridjs-minimap-gap));
-      --link-color-default: #9bf;
-      --link-color-visited: #a9d;
-      --link-color-hover: #bff;
-      --sparkline-bar-filled: #8af;
-      --sparkline-bar-empty: #555;
-    }
+/* Base container - Flex column */
+.log-viewer-container {
+  background-color: black; color: #ddd; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px; height: 100%; position: relative; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box;
+  /* Remove padding-right from here */
+}
+/* Controls area */
+#controls-area {
+  position: relative; z-index: 10; background-color: #1c1c1c; padding: 5px 8px; border-bottom: 1px solid #444;
+  flex-shrink: 0; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; box-sizing: border-box;
+}
+#controls-area label { /* Keep */ }
+#controls-area input[type="text"] { /* Keep */ }
+#controls-area input[type="text"]:focus { /* Keep */ }
 
-    /* Base container */
-    .log-viewer-container {
-      background-color: black;
-      color: #ddd;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 13px;
-      height: 100%;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-sizing: border-box;
-    }
+/* Content Area - Flex row, relative for minimap */
+#content-area {
+    flex-grow: 1; display: flex; flex-direction: row; overflow: hidden;
+    position: relative; /* <<< For minimap */
+    height: 100%; min-height: 0;
+}
 
-    /* Controls area */
-    #controls-area {
-      position: relative;
-      z-index: 10;
-      background-color: #1c1c1c;
-      padding: 5px 8px;
-      border-bottom: 1px solid #444;
-      flex-shrink: 0;
-      min-height: 35px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      flex-wrap: wrap;
-      box-sizing: border-box;
-    }
-    #controls-area label { color: #aaa; font-size: 0.9em; margin-right: 5px; }
-    #controls-area input[type="text"] { /* Base input style */
-        background-color: #2a2a2a; border: 1px solid #444; color: #ddd;
-        border-radius: 4px; padding: 4px 8px; font-size: 13px;
-        line-height: 1.4; box-sizing: border-box;
-    }
-     #controls-area input[type="text"]:focus {
-        border-color: #66f; box-shadow: 0 0 0 2px rgba(100, 100, 255, 0.3); outline: none;
-     }
+/* Grid Container - Flex column, has padding */
+#gridjs-container {
+    flex-grow: 1;
+    position: relative;
+    display: flex; flex-direction: column; /* <<< Flex column */
+    height: 100%; min-height: 0; box-sizing: border-box;
+    padding-right: var(--gridjs-container-padding-right); /* <<< Padding here */
+    overflow: hidden; /* <<< Hide internal overflow */
+    background-color: black; /* <<< Ensure container background */
+}
 
+/* Minimap Styles - Absolute relative to #content-area */
+#gridjs-minimap {
+    position: absolute; /* <<< Relative to content-area */
+    top: 0; bottom: 0; right: 0; width: var(--gridjs-minimap-width); height: 100%;
+    background-color: #222; overflow: hidden; box-shadow: inset 2px 0 5px -2px rgba(0,0,0,0.5);
+    z-index: 3; box-sizing: border-box; cursor: grab;
+}
+#gridjs-minimap.grabbing { cursor: grabbing !important; }
+.minimap-marker { /* Keep as is */ }
 
-    /* Content Area */
-    #content-area {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: row;
-        overflow: hidden;
-        position: relative; /* For minimap */
-        height: 100%;
-        min-height: 0;
-    }
-
-    /* Grid Container */
-    #gridjs-container {
-        flex-grow: 1;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        min-height: 0;
-        box-sizing: border-box;
-        padding-right: var(--gridjs-container-padding-right); /* Space for minimap */
-    }
-
-    /* Minimap Styles */
-    #gridjs-minimap {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        right: 0;
-        width: var(--gridjs-minimap-width);
-        height: 100%;
-        background-color: #222;
-        overflow: hidden;
-        box-shadow: inset 2px 0 5px -2px rgba(0,0,0,0.5);
-        z-index: 3;
-        box-sizing: border-box;
-        cursor: grab;
-    }
-    #gridjs-minimap.grabbing { cursor: grabbing !important; }
-
-    .minimap-marker {
-        position: absolute;
-        left: 1px;
-        right: 1px;
-        height: 2px;
-        background-color: rgba(255, 215, 0, 0.6);
-        pointer-events: none;
-        border-radius: 1px;
-        z-index: 1;
-    }
-
-    /* Scrollbar Styles */
-    .gridjs-wrapper::-webkit-scrollbar { width: var(--gridjs-minimap-width); height: 10px; }
-    .gridjs-wrapper::-webkit-scrollbar-thumb { background: #555; border-radius: 5px; border: 2px solid #222; }
-    .gridjs-wrapper::-webkit-scrollbar-track { background: transparent; }
-    .gridjs-wrapper { scrollbar-width: thin; scrollbar-color: #555 transparent; }
-
-    
+/* Scrollbar Styles - Target the wrapper */
+.gridjs-wrapper::-webkit-scrollbar { width: var(--gridjs-minimap-width); height: 10px; }
+.gridjs-wrapper::-webkit-scrollbar-thumb { background: #555; border-radius: 5px; border: 2px solid #222; }
+.gridjs-wrapper::-webkit-scrollbar-track { background: transparent; }
+.gridjs-wrapper { scrollbar-width: thin; scrollbar-color: #555 transparent; }

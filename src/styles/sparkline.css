@@ -1,27 +1,29 @@
-    /* src/styles/sparkline.css */
+/* src/styles/sparkline.css */
 
-    /* Sparkline Styles - Single Vertical Bar */
-    .sparkline-container {
-        display: inline-block;      /* Display next to text */
-        position: relative;
-        width: 8px;                 /* Width of the sparkline area */
-        height: 16px;               /* Height of the sparkline area */
-        background-color: var(--sparkline-bar-empty); /* Container provides the 'empty' background */
-        margin-left: 8px;
-        vertical-align: middle;
-        border-radius: 1px;
-        overflow: hidden;
-        box-sizing: border-box;
-        flex-shrink: 0;             /* Prevent shrinking if TD becomes flex again */
-    }
+/* Sparkline Styles - Histogram */
+.sparkline-container {
+    display: inline-flex;       /* Lay out bars horizontally */
+    align-items: flex-end;      /* Align bars to bottom */
+    height: 16px;               /* Overall height */
+    margin-left: 8px;
+    vertical-align: middle;
+    gap: 1px;                   /* Space between bars */
+    position: relative;
+    box-sizing: border-box;
+    flex-shrink: 0;             /* Prevent shrinking if parent is flex */
+    /* border: 1px solid lime; */ /* Removed debug border */
+}
 
-    .sparkline-bar { /* The single filled bar */
-        display: block;
-        position: absolute;
-        bottom: 0;                  /* Align to bottom */
-        left: 0;
-        width: 100%;                /* Full width of container */
-        background-color: var(--sparkline-bar-filled); /* Bar color */
-        /* height: is set via inline style in JS */
-    }
-    
+.sparkline-hist-bar { /* Style for individual bars */
+    display: block;
+    width: 3px;                 /* Width of each bar */
+    height: 100%;               /* Start at full height */
+    background-color: var(--sparkline-bar-empty); /* Default/empty bar color */
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+.sparkline-hist-bar--filled { /* Modifier for filled bars */
+   background-color: var(--sparkline-bar-filled); /* Active/filled bar color */
+   /* Height is implicitly 100% */
+}
+

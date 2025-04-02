@@ -1,3 +1,5 @@
+// src/utils/escapeRegExp.ts
+
 /**
  * Escapes special characters in a string for use in a regular expression.
  */
