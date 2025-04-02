@@ -17,12 +17,12 @@ export function setupHTML(visElement: HTMLElement): void {
                 <input type="text" id="highlight-input" placeholder="Highlight text..." />
                 </div>
             <div id="content-area">
-                 <div id="gridjs-container">
-                     </div>
-                 <div id="gridjs-minimap">
-                     </div>
+                <div id="gridjs-container">
+                    </div>
+                </div>
+            <div id="gridjs-minimap">
+                </div>
             </div>
-        </div>
     `;
 
     // Set innerHTML ONCE

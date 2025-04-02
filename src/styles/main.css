@@ -72,14 +72,14 @@
 /* Content Area - Takes remaining space */
 #content-area {
     flex-grow: 1; /* Takes remaining vertical space */
-    display: flex; /* Use flex for side-by-side grid/minimap */
+    display: flex; /* Use flex for side-by-side grid/minimap (Minimap is no longer a child) */
     flex-direction: row;
     overflow: hidden; /* Important to contain children */
-    position: relative; /* Positioning context for minimap */
+ /* --- REMOVED position: relative --- */
     height: 100%; /* Fill available height */
     min-height: 0; /* Important for flex children */
     box-sizing: border-box; /* Include padding/border */
-     /* Remove padding-right, it's on the parent now */
+     /* Padding is on the parent log-viewer-container */
 }
 
 /* Grid Container - Flex column, takes available space */
@@ -91,7 +91,6 @@
     height: 100%;
     min-height: 0;
     box-sizing: border-box;
-    /* No padding here, padding is on log-viewer-container */
     overflow: hidden; /* Clip wrapper/header/footer */
     background-color: black; /* Ensure background */
 }
