@@ -1,5 +1,5 @@
 // src/ui/dom.ts
-import { elements } from '../core/state';
+import { elements } from '../core/state'; // Use relative path
 
 /**
  * Sets up the basic HTML structure for the visualization.
@@ -10,7 +10,6 @@ export function setupHTML(visElement: HTMLElement): void {
     console.log("Setting up base HTML structure.");
 
     // Define the basic HTML structure string
-    // CSS classes defined here should match those in your CSS files
     const htmlContent = `
         <div class="log-viewer-container">
             <div id="controls-area">
@@ -47,10 +46,12 @@ export function findElements(visElement: HTMLElement): boolean {
         return false;
     }
 
+    // Find key elements and store references in the shared 'elements' object
     elements.gridJsContainer = baseElement.querySelector<HTMLElement>("#gridjs-container");
     elements.highlightInput = baseElement.querySelector<HTMLInputElement>("#highlight-input");
     elements.minimapContainer = baseElement.querySelector<HTMLElement>("#gridjs-minimap");
 
+    // Verify that critical elements were found
     const criticalElementsFound = !!elements.gridJsContainer && !!elements.highlightInput && !!elements.minimapContainer;
 
     if (!criticalElementsFound) {

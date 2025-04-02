@@ -1,40 +1,98 @@
 /* src/styles/gridjs-theme.css */
+/* Contains custom overrides and theming for Grid.js elements */
+/* Uses flexbox for wrapper and JS height calculation */
 
 /* Header - Fixed height */
 .gridjs-head {
-  flex-shrink: 0; height: var(--gridjs-header-height);
-  position: relative; z-index: 1; border-bottom: 1px solid #555;
-  box-sizing: border-box; padding: 5px 8px; background-color: #1a1a1a; color: #eee;
-  overflow: hidden;
+  flex-shrink: 0; /* Needed for flex column layout */
+  height: var(--gridjs-header-height);
+  position: relative; /* Keep relative for search positioning */
+  z-index: 1;
+  border-bottom: 1px solid #555;
+  box-sizing: border-box;
+  padding: 5px 8px; /* Adjust padding */
+  background-color: #1a1a1a;
+  color: #eee;
+  overflow: hidden; /* Keep clearfix */
 }
-.gridjs-search { float: left; margin-right: 10px; }
-input.gridjs-input.gridjs-search-input { /* Inherited */ }
+/* Ensure clearfix for floated elements inside header if needed */
+.gridjs-head::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+.gridjs-search {
+    float: left; /* Float search to the left */
+    margin-right: 10px; /* Add some margin */
+}
+/* Style for search input */
+input.gridjs-input.gridjs-search-input {
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  color: #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  box-sizing: border-box;
+  width: 200px; /* Example width */
+}
+input.gridjs-input.gridjs-search-input:focus {
+    border-color: #66f;
+    box-shadow: 0 0 0 2px rgba(100, 100, 255, 0.3);
+    outline: none;
+}
 
 /* Footer - Fixed height */
 .gridjs-footer {
-    flex-shrink: 0; height: var(--gridjs-footer-height);
-    position: relative; z-index: 1; background-color: #1c1c1c;
-    border-top: 1px solid #555; box-shadow: none; padding: 5px 10px;
-    color: #aaa; box-sizing: border-box;
+    flex-shrink: 0; /* Needed for flex column layout */
+    height: var(--gridjs-footer-height);
+    position: relative;
+    z-index: 1;
+    background-color: #1c1c1c;
+    border-top: 1px solid #555;
+    box-shadow: none;
+    padding: 5px 10px;
+    color: #aaa;
+    box-sizing: border-box;
 }
-.gridjs-footer:empty { height: 0; padding: 0; border: none; display: none; }
+/* Ensure clearfix for floated elements inside footer if needed */
+.gridjs-footer::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+.gridjs-footer:empty {
+    height: 0;
+    padding: 0;
+    border: none;
+    display: none; /* Hide if empty */
+}
 
 /* Wrapper - Flex grow, scrolls, height set by JS */
 .gridjs-wrapper {
-    flex-grow: 1 !important; /* <<< Take remaining space */
-    overflow: auto !important; /* <<< Enable scrolling */
+    flex-grow: 1 !important; /* Take remaining vertical space */
+    overflow: auto !important; /* Enable scrolling */
     position: relative !important; /* Basic positioning */
     background-color: black !important;
-    border: none !important; border-radius: 0 !important; width: 100%;
+    border: none !important;
+    border-radius: 0 !important;
+    width: 100%;
     min-height: 0 !important; /* Prevent flex blowout */
     z-index: 0;
     /* Height is set dynamically via JavaScript */
 }
 
 /* Table */
-table.gridjs-table { /* Keep as is */ }
+table.gridjs-table {
+  border-collapse: collapse;
+  text-align: left;
+  width: 100%;
+  table-layout: fixed;
+  /* height: auto !important; */ /* Removed */
+}
 
-/* TH styles - RE-ADD sticky */
+/* TH styles - Restore sticky */
 th.gridjs-th {
   background-color: #1a1a1a; color: #eee; border: none; border-right: 1px solid #333;
   border-bottom: 1px solid #555; padding: 8px 10px; font-weight: bold;
@@ -45,39 +103,96 @@ th.gridjs-th {
   box-sizing: border-box; vertical-align: middle; user-select: none;
 }
 th.gridjs-th:last-child { border-right: none; }
-th.gridjs-th .gridjs-th-content { /* Keep as is */ }
+th.gridjs-th .gridjs-th-content {
+    float: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
 
 /* Sort Indicator Styles - Background Image Override */
 th.gridjs-th-sort { cursor: pointer; position: relative; padding-right: 25px !important; }
-th.gridjs-th-sort:focus, th.gridjs-th-sort:hover { background-color: #333 !important; }
-button.gridjs-sort { /* Keep SVG background styles from previous step */ }
-button.gridjs-sort:hover { /* Keep as is */ }
-button.gridjs-sort-neutral { /* Keep as is */ }
-button.gridjs-sort-asc { /* Keep as is */ }
-button.gridjs-sort-desc { /* Keep as is */ }
+th.gridjs-th-sort:focus,
+th.gridjs-th-sort:hover { background-color: #333 !important; }
+/* Style the button containing the sort icon */
+button.gridjs-sort {
+    background-color: transparent !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    background-size: 10px 10px !important; /* Adjust size */
+    border: none !important; cursor: pointer; float: right; height: 100% !important; /* Use height 100% */
+    margin: 0 !important; outline: none !important; padding: 0 !important;
+    width: 13px !important; /* Adjust width */
+    opacity: 0.6 !important;
+    transition: opacity 0.15s ease-in-out !important;
+    position: absolute; /* Position it within the TH */
+    right: 8px;
+    top: 0;
+}
+button.gridjs-sort:hover { opacity: 1 !important; }
+/* White SVG arrow for neutral state (optional, often hidden) */
+button.gridjs-sort-neutral {
+     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='white'%3E%3Cpath d='M5 0L0 5h10zM5 10L0 5h10z'/%3E%3C/svg%3E") !important;
+     opacity: 0.3 !important;
+}
+/* White SVG arrow for ascending */
+button.gridjs-sort-asc {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='white'%3E%3Cpath d='M5 0L0 5h10z'/%3E%3C/svg%3E") !important;
+    opacity: 1 !important;
+}
+/* White SVG arrow for descending */
+button.gridjs-sort-desc {
+     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='white'%3E%3Cpath d='M5 10L0 5h10z'/%3E%3C/svg%3E") !important;
+     opacity: 1 !important;
+}
+
 
 /* Resizer Styles */
-.gridjs-resizable { /* Keep as is */ }
-.gridjs-resizable:hover { /* Keep as is */ }
+.gridjs-resizable {
+    position: absolute !important;
+    top: 0;
+    bottom: 0;
+    right: -5px; /* Position slightly outside the cell border */
+    width: 10px; /* Wider clickable area */
+    cursor: ew-resize;
+    z-index: 3 !important; /* Above other header content */
+}
+.gridjs-resizable:hover {
+    background-color: rgba(100, 100, 255, 0.5) !important; /* Visual feedback on hover */
+}
 
 /* Table Body & Cells */
-.gridjs-tbody { background-color: black; z-index: 0; }
+.gridjs-tbody { background-color: black; z-index: 0; } /* Dark theme */
 .gridjs-tr { border: none; }
-.gridjs-tr:nth-child(odd) { background-color: black; }
-.gridjs-tr:nth-child(even) { background-color: #111; }
+.gridjs-tr:nth-child(odd) td.gridjs-td { background-color: black; } /* Dark theme */
+.gridjs-tr:nth-child(even) td.gridjs-td { background-color: #111; } /* Dark theme */
 
 td.gridjs-td {
-    color: #ddd; padding: 4px 10px; border: none; border-bottom: 1px dotted #444;
-    line-height: 1.5; white-space: normal;
-    /* <<< Add overflow hidden for fixed layout >>> */
-    overflow: hidden;
-    /* <<< text-overflow: ellipsis; only works with white-space: nowrap >>> */
-    /* text-overflow: ellipsis; */
-    overflow-wrap: break-word; word-break: break-word;
-    box-sizing: border-box; vertical-align: top;
+    color: #ddd;
+    padding: 4px 10px;
+    border: none;
+    border-bottom: 1px dotted #444; /* Custom border */
+    line-height: 1.5;
+    white-space: normal;
+    overflow: hidden; /* Prevent content spill */
+    overflow-wrap: break-word;
+    word-break: break-word;
+    box-sizing: border-box;
+    vertical-align: top; /* Align content to top */
  }
 
-/* Keep .cell-value simple for now */
- .cell-value { display: inline; margin-right: 5px; }
+ /* Style for the value part of the cell */
+ .cell-value {
+     display: inline; /* Allow sparkline to sit next to it */
+     margin-right: 5px; /* Space before sparkline */
+     /* Add max-width / overflow / ellipsis here if you want truncation */
+ }
 
- td.gridjs-message { /* Keep as is */ }
+ /* Style for messages like 'Loading...' or 'No data' */
+ td.gridjs-message {
+   text-align: center;
+   padding: 15px;
+   color: #aaa;
+   background-color: black;
+   display: table-cell !important; /* Ensure it spans correctly */
+ }

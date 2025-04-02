@@ -1,6 +1,5 @@
 // src/core/state.ts
-// <<< Import Cell and use VisQueryResponse >>>
-import { VisQueryResponse, Row, VisConfig, VisState, VisElements, MeasureMinMax, Cell, VisData } from './types';
+import { VisQueryResponse, Row, VisConfig, VisState, VisElements, MeasureMinMax, Cell, VisData } from './types'; // Import needed types
 
 // Export the application state singleton
 export const state: VisState = {
@@ -24,13 +23,11 @@ export const elements: VisElements = {
  * Updates the core parts of the state (data, queryResponse, config).
  * Called typically at the beginning of updateAsync.
  */
-// <<< Use VisData type for newData >>>
 export function updateCoreState(newData: VisData, newQueryResponse: VisQueryResponse | null, newConfig: VisConfig | null) {
     console.log("Updating core state", { hasData: !!newData, hasQuery: !!newQueryResponse, hasConfig: !!newConfig });
     state.originalData = newData || [];
     state.queryResponse = newQueryResponse;
     state.config = newConfig;
-    // Note: measureMinMax is calculated separately
 }
 
 /**

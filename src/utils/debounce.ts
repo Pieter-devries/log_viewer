@@ -1,3 +1,4 @@
+// src/utils/debounce.ts
 /**
  * Debounce utility function. Limits the rate at which a function can fire.
  * @param func - The function to debounce.

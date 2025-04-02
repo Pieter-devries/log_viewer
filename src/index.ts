@@ -2,12 +2,6 @@
 import { visDefinition } from './visualization';
 import { Looker } from './core/types';
 
-// <<< Add a direct import test >>>
-import * as layoutTest from './ui/layout';
-console.log("--- TEST: Direct import of layout module in index.ts:", layoutTest);
-// <<< End direct import test >>>
-
-
 // Import the base Grid.js Mermaid theme FIRST
 import 'gridjs/dist/theme/mermaid.css';
 
