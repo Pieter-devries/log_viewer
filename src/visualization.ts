@@ -1,20 +1,18 @@
 // src/visualization.ts
 import { VisualizationDefinition, VisConfig, VisQueryResponse, VisData } from './core/types';
 import { state, elements, updateCoreState, calculateMeasureMinMax } from './core/state';
-import { setupHTML, findElements, getScrollWrapper } from './ui/dom';
+import { setupHTML, findElements } from './ui/dom'; // Removed getScrollWrapper import if not used directly here
 import { attachAllListeners } from './ui/listeners';
 import { applyHighlight } from './ui/highlight';
 import { transformLookerDataForGridJs } from './core/dataTransformer';
 import { getGridJsOptions } from './core/gridOptions';
-import { setGridWrapperHeight } from './ui/layout';
+// --- Import layout functions ---
+import { updateLayout, setupHeaderResizeObserver, disconnectHeaderResizeObserver } from './ui/layout';
 import { updateMinimapThumb, updateMinimapMarkers } from './ui/minimap';
 import { Grid } from 'gridjs';
-import { addControlsToHeader } from './ui/header_controls'; // <-- Import the helper
+import { addControlsToHeader } from './ui/header_controls';
 
-// Declare the looker global object
 declare var looker: any;
-
-// --- REMOVED Helper function addControlsToHeader (moved to ./ui/header_controls.ts) ---
 
 export const visDefinition: VisualizationDefinition = {
     id: 'log-viewer-gridjs',
@@ -30,8 +28,8 @@ export const visDefinition: VisualizationDefinition = {
             setupHTML(element);
 
             setTimeout(() => {
-                if (!findElements(element)) { /* ... error handling ... */ return; }
-                if (!elements.gridJsContainer) { /* safety check */ return; }
+                if (!findElements(element)) { return; }
+                if (!elements.gridJsContainer) { return; }
                 elements.gridJsContainer.innerHTML = "";
 
                 try {
@@ -40,25 +38,24 @@ export const visDefinition: VisualizationDefinition = {
 
                     try {
                         grid.render(elements.gridJsContainer);
-                        setGridWrapperHeight();
+                        updateLayout(); // Call initial layout adjustments
                         updateMinimapThumb();
-                    } catch (renderError) { /* ... error handling ... */ state.gridInstance = null; return; }
+                    } catch (renderError) { console.error("Create Error: grid.render() failed.", renderError); state.gridInstance = null; return; }
 
                     state.gridInstance = grid;
 
-                    // --- Call dynamic addition AFTER render ---
-                    if (addControlsToHeader(element)) { // Use imported helper
-                        // --- Re-find elements and attach listeners AFTER adding controls ---
+                    if (addControlsToHeader(element)) {
                         if (findElements(element)) {
                             attachAllListeners();
-                        } else {
-                            console.error("Create Error: Failed to find elements after adding controls.");
-                        }
+                            updateLayout(); // Adjust layout AGAIN after controls added
+                            updateMinimapThumb();
+                            setupHeaderResizeObserver(); // Setup observer AFTER final layout adjustments
+                        } else { console.error("Create Error: Failed to find elements after adding controls."); }
                     }
 
                     console.log("Log Viewer Vis (Grid.js): Create finished successfully.");
 
-                } catch (initError) { /* ... error handling ... */ state.gridInstance = null; }
+                } catch (initError) { console.error("Create Error: Failed to initialize Grid.js.", initError); state.gridInstance = null; }
             }, 0);
 
         } catch (error) { console.error("Create Error: setupHTML failed.", error); }
@@ -68,16 +65,14 @@ export const visDefinition: VisualizationDefinition = {
         console.log("UpdateAsync: START.");
         const logError = (message: string, err?: any) => { console.error(message, err); };
 
-        if (!state.gridInstance) { /* ... handle missing instance ... */ done(); return; }
-        if (!findElements(element)) { /* ... handle missing elements ... */ done(); return; }
+        if (!state.gridInstance) { done(); return; }
+        if (!findElements(element)) { done(); return; }
 
         try {
             updateCoreState(data, queryResponse, config);
             calculateMeasureMinMax();
 
-            const { columns, data: gridData } = transformLookerDataForGridJs(
-                state.originalData, state.queryResponse, state.config, state.measureMinMax
-            );
+            const { columns, data: gridData } = transformLookerDataForGridJs(state.originalData, state.queryResponse, state.config, state.measureMinMax);
             const gridOptions = getGridJsOptions(state.config, columns, gridData);
 
             state.gridInstance.updateConfig(gridOptions);
@@ -87,15 +82,16 @@ export const visDefinition: VisualizationDefinition = {
             try {
                 state.gridInstance.forceRender();
                 console.log("UpdateAsync: forceRender called successfully.");
-                setGridWrapperHeight();
 
-                // --- Add/Verify controls, Re-find elements, Re-attach listeners AFTER forceRender ---
-                if (addControlsToHeader(element)) { // Use imported helper
+                // Add/Verify controls, Re-find elements, Adjust Layout, Re-attach listeners AFTER forceRender
+                if (addControlsToHeader(element)) {
                     if (findElements(element)) {
+                        updateLayout(); // Adjust layout based on potentially new header height
                         attachAllListeners();
-                    } else {
-                        logError("UpdateAsync Error: Failed to find elements after forceRender and adding controls.");
-                    }
+                        setupHeaderResizeObserver(); // Ensure observer is watching the potentially new header
+                    } else { logError("UpdateAsync Error: Failed to find elements after forceRender and adding controls."); }
+                } else {
+                    updateLayout(); // Still adjust layout even if controls failed
                 }
 
             } catch (forceRenderError) { logError("UpdateAsync: forceRender() failed!", forceRenderError); }
@@ -111,20 +107,19 @@ export const visDefinition: VisualizationDefinition = {
                 finally { console.log("UpdateAsync: setTimeout callback calling done()."); done(); }
             }, 50);
 
-        } catch (err) { /* ... error handling ... */ done(); }
+        } catch (err) { logError(`UpdateAsync: CAUGHT ERROR: ${err instanceof Error ? err.message : String(err)}`, err); if (err instanceof Error) { console.error(err.stack); } done(); }
     },
     trigger: (event: string, config: any[]) => { console.log("Vis Triggered:", event, config); },
 
     destroy: function () {
         console.log("Log Viewer Vis (Grid.js): Destroy called.");
+        disconnectHeaderResizeObserver(); // Disconnect observer
         if (state.gridInstance) {
-            try {
-                if (elements.gridJsContainer) {
-                    elements.gridJsContainer.innerHTML = "";
-                }
-            } catch (e) { console.error("Error during destroy cleanup:", e); }
+            try { if (elements.gridJsContainer) { elements.gridJsContainer.innerHTML = ""; } }
+            catch (e) { console.error("Error during destroy cleanup:", e); }
             state.gridInstance = null;
         }
+        // Clear element references, reset state...
         elements.gridJsContainer = null;
         elements.highlightInput = null;
         elements.minimapContainer = null;
@@ -147,4 +142,3 @@ const grabbingStyle = document.createElement('style');
 grabbingStyle.textContent = ` #gridjs-minimap.grabbing { cursor: grabbing !important; } `;
 if (document.head) { document.head.appendChild(grabbingStyle); }
 else { document.addEventListener('DOMContentLoaded', () => { document.head.appendChild(grabbingStyle); }); }
-

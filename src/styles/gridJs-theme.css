@@ -5,25 +5,23 @@
 /* Header - Now contains both search and highlight */
 .gridjs-head {
   flex-shrink: 0;
-  height: var(--gridjs-header-height);
+  height: var(--gridjs-header-height); /* Uses CSS variable */
   position: relative;
   z-index: 6;
-  border-bottom: 1px solid #444; /* Separator line */
+  border-bottom: 1px solid #444; /* Keep separator */
   box-sizing: border-box;
-  /* --- Reduced Padding --- */
-  padding: 1px 5px; /* Reduced vertical and horizontal padding */
-  background-color: #1a1a1a; /* Consistent background */
+  padding: 5px 8px; /* Restored padding */
+  background-color: #1a1a1a;
   color: #eee;
-  overflow: hidden;
+  overflow: hidden; /* Prevent content spill if wrapping */
   display: flex;
   align-items: center;
-  gap: 10px; /* Slightly reduced gap */
-  flex-wrap: wrap;
+  gap: 15px; /* Restored gap */
+  flex-wrap: wrap; /* Allow wrapping */
 }
 
 .gridjs-search {
-  /* Adjustments might be needed depending on how Grid.js renders search */
-  display: flex; /* Ensure search container itself is flex if needed */
+  display: flex;
   align-items: center;
 }
 
@@ -33,14 +31,14 @@ input.gridjs-input.gridjs-search-input {
   border: 1px solid #444;
   color: #ddd;
   border-radius: 4px;
-  /* --- Reduced Padding --- */
-  padding: 1px 5px;
+  padding: 4px 8px; /* Restored padding */
   font-size: 13px;
-  line-height: 1.4; /* Keep line-height for readability */
+  line-height: 1.4;
   box-sizing: border-box;
-  width: 200px; /* Example width */
-  margin-left: 5px; /* Add space after "Search:" label */
+  width: 200px;
+  margin-left: 5px; /* Space after "Search:" label */
 }
+
 input.gridjs-input.gridjs-search-input:focus {
     border-color: #66f;
     box-shadow: 0 0 0 2px rgba(100, 100, 255, 0.3);
@@ -56,8 +54,7 @@ input.gridjs-input.gridjs-search-input:focus {
     background-color: #1c1c1c;
     border-top: 1px solid #555;
     box-shadow: none;
-    /* --- Reduced Padding --- */
-    padding: 1px 5px;
+    padding: 5px 10px; /* Restored padding */
     color: #aaa;
     box-sizing: border-box;
 }
@@ -76,7 +73,6 @@ input.gridjs-input.gridjs-search-input:focus {
 /* Wrapper */
 .gridjs-wrapper {
     flex-grow: 1 !important;
-    /* overflow: auto !important; -- Managed by main.css */
     position: relative !important;
     background-color: black !important;
     border: none !important;
@@ -84,6 +80,8 @@ input.gridjs-input.gridjs-search-input:focus {
     width: 100%;
     min-height: 0 !important;
     z-index: 0;
+    box-sizing: border-box;
+    /* overflow is handled in main.css */
 }
 
 /* Table */
@@ -97,8 +95,7 @@ table.gridjs-table {
 /* TH styles - Keep sticky */
 th.gridjs-th {
   background-color: #1a1a1a; color: #eee; border: none; border-right: 1px solid #333;
-  /* --- Reduced Padding --- */
-  border-bottom: 1px solid #555; padding: 1px 5px; font-weight: bold;
+  border-bottom: 1px solid #555; padding: 8px 10px; font-weight: bold; /* Restored padding */
   text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   position: sticky !important;
   top: 0 !important;
@@ -113,12 +110,11 @@ th.gridjs-th .gridjs-th-content {
     width: 100%;
 }
 
-/* Sort Indicator Styles - Adjust padding/position */
+/* Sort Indicator Styles - Restore original padding */
 th.gridjs-th-sort {
     cursor: pointer;
     position: relative;
-    /* --- Adjust right padding for sort icon --- */
-    padding-right: 18px !important;
+    padding-right: 25px !important;
 }
 th.gridjs-th-sort:focus,
 th.gridjs-th-sort:hover { background-color: #333 !important; }
@@ -133,8 +129,7 @@ button.gridjs-sort {
     opacity: 0.6 !important;
     transition: opacity 0.15s ease-in-out !important;
     position: absolute;
-    /* --- Adjust position due to padding change --- */
-    right: 2px;
+    right: 8px; /* Restored position */
     top: 0;
 }
 button.gridjs-sort:hover { opacity: 1 !important; }
@@ -151,17 +146,6 @@ button.gridjs-sort-desc {
      opacity: 1 !important;
 }
 
-
-/* Resizer Styles */
-.gridjs-resizable {
-    position: absolute !important;
-    top: 0;
-    bottom: 0;
-    right: -5px;
-    width: 10px;
-    cursor: ew-resize;
-    z-index: 3 !important;
-}
 .gridjs-resizable:hover {
     background-color: rgba(100, 100, 255, 0.5) !important;
 }
@@ -174,11 +158,10 @@ button.gridjs-sort-desc {
 
 td.gridjs-td {
     color: #ddd;
-    /* --- Reduced Padding --- */
-    padding: 1px 5px;
+    padding: 4px 10px; /* Restored padding */
     border: none;
     border-bottom: 1px dotted #444;
-    line-height: 1.5; /* Keep line-height */
+    line-height: 1.5;
     white-space: normal;
     overflow: hidden;
     overflow-wrap: break-word;
@@ -193,10 +176,10 @@ td.gridjs-td {
      margin-right: 5px;
  }
 
- /* Style for messages like 'Loading...' or 'No data' */
+ /* Style for messages */
  td.gridjs-message {
     text-align: center;
-    padding: 15px; /* Keep message padding reasonable */
+    padding: 15px;
     color: #aaa;
     background-color: black;
     display: table-cell !important;

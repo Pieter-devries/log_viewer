@@ -1,56 +1,96 @@
 // src/ui/layout.ts
-import { elements } from '../core/state'; // Use relative path
+import { elements } from '../core/state';
+import { debounce } from '../utils/debounce';
 
-console.log("--- MODULE LOADED: src/ui/layout.ts ---");
+let headerResizeObserver: ResizeObserver | null = null;
 
 /**
- * Calculates and sets the height of the grid wrapper dynamically
- * to enable scrolling within the available space.
+ * Adjusts the minimap's top position based on the grid header's actual height.
+ */
+export function adjustMinimapPosition(): void {
+    if (!elements.gridJsContainer || !elements.minimapContainer) return;
+    const gridHead = elements.gridJsContainer.querySelector<HTMLElement>('.gridjs-head');
+    if (!gridHead) return;
+
+    const headerHeight = gridHead.offsetHeight;
+    // --- ADD DEBUG LOG ---
+    console.log(`adjustMinimapPosition: gridHead found, offsetHeight = ${headerHeight}px. Setting minimap top.`);
+    // --- END DEBUG LOG ---
+
+    if (elements.minimapContainer) { // Check again as it might be destroyed
+        elements.minimapContainer.style.top = `${headerHeight}px`;
+    }
+}
+
+/**
+ * Sets up a ResizeObserver to monitor the grid header's height changes
+ * and trigger minimap position adjustments.
+ */
+export function setupHeaderResizeObserver(): void {
+    if (!elements.gridJsContainer) return;
+    const gridHead = elements.gridJsContainer.querySelector<HTMLElement>('.gridjs-head');
+
+    if (gridHead) {
+        if (headerResizeObserver) headerResizeObserver.disconnect(); // Disconnect old one if exists
+
+        const debouncedAdjust = debounce(adjustMinimapPosition, 50);
+
+        headerResizeObserver = new ResizeObserver(entries => {
+            if (entries[0]) debouncedAdjust();
+        });
+
+        headerResizeObserver.observe(gridHead);
+        console.log("ResizeObserver attached to .gridjs-head.");
+    } else {
+        console.warn("setupHeaderResizeObserver: .gridjs-head not found.");
+    }
+}
+
+/**
+ * Disconnects the ResizeObserver.
+ */
+export function disconnectHeaderResizeObserver(): void {
+    if (headerResizeObserver) {
+        headerResizeObserver.disconnect();
+        headerResizeObserver = null;
+        console.log("ResizeObserver disconnected.");
+    }
+}
+
+/**
+ * Calculates and sets the height of the grid wrapper dynamically.
  */
 export function setGridWrapperHeight(): void {
-    // Use requestAnimationFrame to ensure layout calculations are fresh
     window.requestAnimationFrame(() => {
-        if (!elements.gridJsContainer) {
-            console.warn("setGridWrapperHeight: Cannot find #gridjs-container");
-            return;
-        }
+        if (!elements.gridJsContainer) { return; }
         const container = elements.gridJsContainer;
-        const gridWrapper = container.querySelector<HTMLElement>('.gridjs-wrapper');
-        const header = container.querySelector<HTMLElement>('.gridjs-head');
-        const footer = container.querySelector<HTMLElement>('.gridjs-footer');
+        const gridWrapper = container.querySelector<HTMLElement>(".gridjs-wrapper");
+        const header = container.querySelector<HTMLElement>(".gridjs-head");
+        const footer = container.querySelector<HTMLElement>(".gridjs-footer");
 
-        if (!gridWrapper) {
-            console.warn("setGridWrapperHeight: Cannot find .gridjs-wrapper");
-            return;
-        }
+        if (!gridWrapper) { return; }
 
         const containerHeight = container.clientHeight;
-        // Ensure header/footer exist before getting offsetHeight
         const headerHeight = header?.offsetHeight ?? 0;
         const footerHeight = footer?.offsetHeight ?? 0;
-
-        // Calculate available height for the wrapper
         const availableHeight = Math.max(0, containerHeight - headerHeight - footerHeight);
+        const targetHeight = Math.max(50, availableHeight); // Min height 50px
 
-        // Set a minimum height (e.g., 50px) to avoid complete collapse
-        const targetHeight = Math.max(50, availableHeight);
-
-        console.log(`setGridWrapperHeight: ContainerH=${containerHeight}, HeaderH=${headerHeight}, FooterH=${footerHeight}, TargetH=${targetHeight}`);
-
-        // Set the wrapper's height explicitly
         gridWrapper.style.height = `${targetHeight}px`;
 
-        // Re-check scroll vs client height AFTER setting explicit height and allowing reflow
-        // Use another timeout or rAF if needed for absolute certainty after styles apply
+        // Optional check
         setTimeout(() => {
-            if (!gridWrapper) return; // Check again
+            if (!gridWrapper) return;
             const scrollHeight = gridWrapper.scrollHeight;
             const clientHeight = gridWrapper.clientHeight;
-            if (scrollHeight > clientHeight) {
-                console.log(`setGridWrapperHeight: Scrolling CHECK - scrollH=${scrollHeight}, clientH=${clientHeight} -> SCROLLING ENABLED`);
-            } else {
-                console.warn(`setGridWrapperHeight: Scrolling CHECK - scrollH=${scrollHeight}, clientH=${clientHeight} -> SCROLLING DISABLED`);
-            }
-        }, 0); // setTimeout 0 allows potential reflow
-    }); // End requestAnimationFrame
+            // console.log(`setGridWrapperHeight: Scrolling CHECK - scrollH=${scrollHeight}, clientH=${clientHeight}`);
+        }, 0);
+    });
+}
+
+/** Convenience function to run all layout adjustments */
+export function updateLayout(): void {
+    setGridWrapperHeight();
+    adjustMinimapPosition();
+    // Note: setupHeaderResizeObserver is usually called once after elements are stable
 }
