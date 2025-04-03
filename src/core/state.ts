@@ -17,6 +17,7 @@ export const elements: VisElements = {
     gridJsContainer: null,
     highlightInput: null,
     minimapContainer: null,
+    minimapThumb: null,
 };
 
 /**

@@ -170,4 +170,5 @@ export interface VisElements {
     gridJsContainer: HTMLElement | null;
     highlightInput: HTMLInputElement | null;
     minimapContainer: HTMLElement | null;
+    minimapThumb: HTMLElement | null;
 }

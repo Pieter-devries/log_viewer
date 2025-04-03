@@ -9,7 +9,7 @@ import { elements } from '../core/state'; // Use relative path
 export function setupHTML(visElement: HTMLElement): void {
     console.log("Setting up base HTML structure.");
 
-    // Define the basic HTML structure string
+    // Added #gridjs-minimap-thumb inside #gridjs-minimap
     const htmlContent = `
         <div class="log-viewer-container">
             <div id="controls-area">
@@ -21,10 +21,10 @@ export function setupHTML(visElement: HTMLElement): void {
                     </div>
                 </div>
             <div id="gridjs-minimap">
+                <div id="gridjs-minimap-thumb"></div>
                 </div>
             </div>
     `;
-
     // Set innerHTML ONCE
     visElement.innerHTML = htmlContent;
 
@@ -50,9 +50,11 @@ export function findElements(visElement: HTMLElement): boolean {
     elements.gridJsContainer = baseElement.querySelector<HTMLElement>("#gridjs-container");
     elements.highlightInput = baseElement.querySelector<HTMLInputElement>("#highlight-input");
     elements.minimapContainer = baseElement.querySelector<HTMLElement>("#gridjs-minimap");
+    // --- Find the minimap thumb element ---
+    elements.minimapThumb = baseElement.querySelector<HTMLElement>("#gridjs-minimap-thumb");
 
     // Verify that critical elements were found
-    const criticalElementsFound = !!elements.gridJsContainer && !!elements.highlightInput && !!elements.minimapContainer;
+    const criticalElementsFound = !!elements.gridJsContainer && !!elements.highlightInput && !!elements.minimapContainer; // Thumb is not 'critical' for basic function
 
     if (!criticalElementsFound) {
         console.error("findElements: One or more critical elements could not be found.");
@@ -63,5 +65,20 @@ export function findElements(visElement: HTMLElement): boolean {
     } else {
         console.log("findElements: All critical elements found.");
     }
+    // Check specifically for thumb, but don't fail if missing initially
+    if (!elements.minimapThumb) {
+        console.warn("findElements: #gridjs-minimap-thumb element not found. Thumb functionality will be disabled.");
+    }
+
     return criticalElementsFound;
 }
+
+// Function to get the scroll wrapper (remains the same)
+export function getScrollWrapper(): HTMLElement | null {
+    if (!elements.gridJsContainer) {
+        console.warn("getScrollWrapper: gridJsContainer not found");
+        return null;
+    }
+    return elements.gridJsContainer.querySelector<HTMLElement>(".gridjs-wrapper");
+}
+

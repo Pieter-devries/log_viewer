@@ -6,43 +6,45 @@ import { attachAllListeners } from './ui/listeners';
 import { applyHighlight } from './ui/highlight';
 import { transformLookerDataForGridJs } from './core/dataTransformer';
 import { getGridJsOptions } from './core/gridOptions';
-import { setGridWrapperHeight } from './ui/layout'; // <<< Import height function
+import { setGridWrapperHeight } from './ui/layout';
+import { updateMinimapThumb } from './ui/minimap'; // Import thumb update function
 import { Grid } from 'gridjs';
 
+// Declare the looker global object
+declare var looker: any;
+
 export const visDefinition: VisualizationDefinition = {
-    id: 'log-viewer-gridjs',
-    label: 'Log Viewer (Grid.js)',
-    options: {
+    id: 'log-viewer-gridjs', // Unique ID for the visualization
+    label: 'Log Viewer (Grid.js)', // Display name
+    options: { // Configuration options displayed in the Looker UI
         showRowNumbers: { type: 'boolean', label: 'Show Row Numbers', default: true, section: 'Display', order: 1 },
         showMeasureSparklines: { type: 'boolean', label: 'Show Sparklines for Measures', default: false, section: 'Display', order: 2 },
     },
 
+    // Called once to set up the initial state and DOM structure
     create: function (element: HTMLElement, config: VisConfig) {
         console.log("Log Viewer Vis (Grid.js): Create called.");
         try {
             setupHTML(element);
-            // Use setTimeout to ensure DOM elements are ready
+            // Use setTimeout to ensure DOM elements are ready after innerHTML assignment
             setTimeout(() => {
                 // Ensure base elements are found after setupHTML
                 if (!findElements(element)) {
                     console.error("Create Error: Critical elements not found after setupHTML.");
                     return;
                 }
-                // Ensure the container exists and clear it
+                // Ensure the container exists and clear it (Grid.js expects an empty container)
                 if (elements.gridJsContainer) {
-                    elements.gridJsContainer.innerHTML = '';
+                    elements.gridJsContainer.innerHTML = ""; // Clear container
                 } else {
                     console.error("Create Error: Grid container element not found.");
                     return;
                 }
 
                 try {
-                    // --- MODIFIED LINE ---
                     // Initialize grid options in 'create' with the passed config,
                     // but use empty arrays for columns and data as they are not available yet.
-                    // Provide 'true' for the required 'resizable' argument.
                     const initialGridOptions = getGridJsOptions(config, [], []);
-                    // --- END MODIFIED LINE ---
 
                     // Create the Grid.js instance with initial (likely empty) options
                     const grid = new Grid(initialGridOptions);
@@ -52,8 +54,10 @@ export const visDefinition: VisualizationDefinition = {
                         grid.render(elements.gridJsContainer);
                         // Set initial height
                         setGridWrapperHeight();
-                    }
-                    catch (renderError) {
+                        // --- Call initial thumb update ---
+                        updateMinimapThumb();
+                        // --- End change ---
+                    } catch (renderError) {
                         console.error("Create Error: grid.render() failed.", renderError);
                         state.gridInstance = null; // Ensure state reflects failure
                         return;
@@ -76,18 +80,19 @@ export const visDefinition: VisualizationDefinition = {
         }
     },
 
+    // Called whenever data or configuration changes
     updateAsync: function (data: VisData, element: HTMLElement, config: VisConfig, queryResponse: VisQueryResponse, details: any, done: () => void) {
         console.log("UpdateAsync: START.");
         const logError = (message: string, err?: any) => { console.error(message, err); };
 
-        // Do not proceed if grid wasn't successfully created
+        // Check if grid instance exists before proceeding
         if (!state.gridInstance) {
             console.warn("UpdateAsync: Grid instance not available, possibly due to creation error. Aborting update.");
             done(); // Signal completion even if aborted
             return;
         }
 
-        // Ensure elements are still available (though usually handled in create)
+        // Ensure elements are still findable (though usually handled in create)
         if (!findElements(element)) {
             logError("Update Error: Critical elements missing during update.");
             done();
@@ -120,6 +125,7 @@ export const visDefinition: VisualizationDefinition = {
                 setGridWrapperHeight();
             } catch (forceRenderError) {
                 logError("UpdateAsync: forceRender() failed!", forceRenderError);
+                // Consider if we should still call done() or try to recover
             }
 
             // Post-render actions (like applying highlight)
@@ -129,11 +135,12 @@ export const visDefinition: VisualizationDefinition = {
                 try {
                     // Apply highlighting based on the current term in state
                     applyHighlight(state.highlightTerm);
-                }
-                catch (highlightError) {
+                    // --- Update thumb after potential DOM changes ---
+                    updateMinimapThumb();
+                    // --- End change ---
+                } catch (highlightError) {
                     logError("Error during post-render highlight/minimap update:", highlightError);
-                }
-                finally {
+                } finally {
                     console.log("UpdateAsync: setTimeout callback calling done().");
                     done(); // Signal Looker that the update is complete
                 }
@@ -145,22 +152,26 @@ export const visDefinition: VisualizationDefinition = {
             done(); // Ensure done() is called even if errors occur
         }
     },
-
     trigger: (event: string, config: any[]) => {
         console.log("Vis Triggered:", event, config);
+        // Potentially handle specific triggers if needed
     },
 
+    // Called when the visualization is removed or Looker updates visualization
     destroy: function () {
         console.log("Log Viewer Vis (Grid.js): Destroy called.");
         // Optional: Call removeAllListeners() here if you implement it
         if (state.gridInstance) {
             try {
-                // Attempt to clean up the container
+                // Attempt to clean up the container used by Grid.js
                 if (elements.gridJsContainer) {
-                    elements.gridJsContainer.innerHTML = '';
+                    elements.gridJsContainer.innerHTML = "";
                 }
-            }
-            catch (e) {
+                // Call Grid.js destroy method if it exists (check Grid.js docs)
+                // if (typeof state.gridInstance.destroy === 'function') {
+                //     state.gridInstance.destroy();
+                // }
+            } catch (e) {
                 console.error("Error during destroy cleanup:", e);
             }
             // Release the grid instance reference
@@ -170,6 +181,7 @@ export const visDefinition: VisualizationDefinition = {
         elements.gridJsContainer = null;
         elements.highlightInput = null;
         elements.minimapContainer = null;
+        elements.minimapThumb = null; // Clear thumb ref
         elements.visElement = null;
         // Reset other relevant state
         state.highlightTerm = '';
@@ -177,3 +189,20 @@ export const visDefinition: VisualizationDefinition = {
         console.log("Log Viewer Vis (Grid.js): Destroy cleanup finished.");
     }
 };
+
+// --- Looker Visualization API Registration ---
+// Add a check for the looker object for safety
+if (looker && looker.plugins && looker.plugins.visualizations) {
+    // Register the visualization with Looker
+    looker.plugins.visualizations.add(visDefinition);
+    console.log("Log Viewer (Grid.js) visualization registered.");
+} else {
+    console.error("Looker environment not found. Visualization not registered.");
+}
+
+// Optional: Add CSS for the grabbing cursor dynamically
+const grabbingStyle = document.createElement('style');
+grabbingStyle.textContent = ` #gridjs-minimap.grabbing { cursor: grabbing !important; } `;
+if (document.head) { document.head.appendChild(grabbingStyle); }
+else { document.addEventListener('DOMContentLoaded', () => { document.head.appendChild(grabbingStyle); }); }
+

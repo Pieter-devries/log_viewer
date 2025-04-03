@@ -2,28 +2,31 @@
 /* Contains custom overrides and theming for Grid.js elements */
 /* Uses flexbox for wrapper and JS height calculation */
 
-/* Header - Fixed height */
+/* Header - Adjust for visual merging */
 .gridjs-head {
-  flex-shrink: 0; /* Needed for flex column layout */
+  flex-shrink: 0;
   height: var(--gridjs-header-height);
-  position: relative; /* Keep relative for search positioning */
-  z-index: 1;
-  border-bottom: 1px solid #555;
+  position: relative;
+  z-index: 6; /* Above controls area */
+  /* border-bottom: 1px solid #555; -- REMOVED BORDER */
   box-sizing: border-box;
-  padding: 5px 8px; /* Adjust padding */
-  background-color: #1a1a1a;
+  padding: 5px 8px; /* Match controls-area padding */
+  background-color: #1a1a1a; /* Match controls-area background or make distinct */
   color: #eee;
-  overflow: hidden; /* Keep clearfix */
+  overflow: hidden;
+  display: flex; /* Use flex to align search input */
+  align-items: center; /* Vertically center items */
+  /* Clearfix removed as flex is used */
 }
-/* Ensure clearfix for floated elements inside header if needed */
-.gridjs-head::after {
+/* .gridjs-head::after {
     content: "";
     display: table;
     clear: both;
-}
+} */
 .gridjs-search {
-    float: left; /* Float search to the left */
-    margin-right: 10px; /* Add some margin */
+  /* float: left; -- REMOVED FLOAT */
+  margin-right: 15px; /* Keep gap between search and potential highlight input */
+  /* Add flex properties if needed, but usually aligns okay */
 }
 /* Style for search input */
 input.gridjs-input.gridjs-search-input {
@@ -92,13 +95,13 @@ table.gridjs-table {
   /* height: auto !important; */ /* Removed */
 }
 
-/* TH styles - Restore sticky */
+/* TH styles - Keep sticky */
 th.gridjs-th {
   background-color: #1a1a1a; color: #eee; border: none; border-right: 1px solid #333;
   border-bottom: 1px solid #555; padding: 8px 10px; font-weight: bold;
   text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  position: sticky !important; /* <<< RE-ADD sticky */
-  top: 0 !important;           /* Stick to top of .gridjs-wrapper */
+  position: sticky !important;
+  top: 0 !important; /* Stick to top of .gridjs-wrapper */
   z-index: 2 !important;
   box-sizing: border-box; vertical-align: middle; user-select: none;
 }

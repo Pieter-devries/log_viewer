@@ -55,7 +55,7 @@ export function getGridJsOptions(
         sort: { multiColumn: true }, // Keep user's sort config
         search: true, // Keep search enabled
         language: { 'search': { 'placeholder': 'Filter value...' } }, // Keep custom placeholder
-        // resizable: true, // REMOVED top-level resizable
+        resizable: true, // REMOVED top-level resizable
         fixedHeader: true, // Keep fixed header
         pagination: false, // Keep pagination disabled
         // autoHeight: false, // Keep autoHeight disabled (Note: Grid.js might manage height differently)
