@@ -2,32 +2,33 @@
 /* Contains custom overrides and theming for Grid.js elements */
 /* Uses flexbox for wrapper and JS height calculation */
 
-/* Header - Adjust for visual merging */
+/* Header - Now contains both search and highlight */
 .gridjs-head {
   flex-shrink: 0;
   height: var(--gridjs-header-height);
   position: relative;
-  z-index: 6; /* Above controls area */
-  /* border-bottom: 1px solid #555; -- REMOVED BORDER */
+  z-index: 6; /* Ensure it's above grid content, potentially adjust if needed */
+  /* border-bottom: 1px solid #555; -- Keep this border to separate from grid */
+  border-bottom: 1px solid #444; /* Match previous controls border color */
   box-sizing: border-box;
-  padding: 5px 8px; /* Match controls-area padding */
-  background-color: #1a1a1a; /* Match controls-area background or make distinct */
+  padding: 5px 8px;
+  background-color: #1a1a1a; /* Keep consistent background */
   color: #eee;
   overflow: hidden;
-  display: flex; /* Use flex to align search input */
-  align-items: center; /* Vertically center items */
-  /* Clearfix removed as flex is used */
+  /* --- Ensure Flex Layout --- */
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Space between items */
+  flex-wrap: wrap; /* Allow wrapping */
 }
-/* .gridjs-head::after {
-    content: "";
-    display: table;
-    clear: both;
-} */
+
 .gridjs-search {
-  /* float: left; -- REMOVED FLOAT */
-  margin-right: 15px; /* Keep gap between search and potential highlight input */
-  /* Add flex properties if needed, but usually aligns okay */
+  /* No float needed */
+  /* margin-right: 15px; -- Gap handles spacing */
+  /* Adjust flex properties if needed for fine-tuning */
+  /* e.g., order: 2; if you want highlight first */
 }
+
 /* Style for search input */
 input.gridjs-input.gridjs-search-input {
   background-color: #2a2a2a;
@@ -46,9 +47,9 @@ input.gridjs-input.gridjs-search-input:focus {
     outline: none;
 }
 
-/* Footer - Fixed height */
+/* Footer - Fixed height (Unchanged) */
 .gridjs-footer {
-    flex-shrink: 0; /* Needed for flex column layout */
+    flex-shrink: 0;
     height: var(--gridjs-footer-height);
     position: relative;
     z-index: 1;
@@ -59,7 +60,6 @@ input.gridjs-input.gridjs-search-input:focus {
     color: #aaa;
     box-sizing: border-box;
 }
-/* Ensure clearfix for floated elements inside footer if needed */
 .gridjs-footer::after {
     content: "";
     display: table;
@@ -69,33 +69,32 @@ input.gridjs-input.gridjs-search-input:focus {
     height: 0;
     padding: 0;
     border: none;
-    display: none; /* Hide if empty */
+    display: none;
 }
 
-/* Wrapper - Flex grow, scrolls, height set by JS */
+/* Wrapper - Flex grow, scrolls, height set by JS (Unchanged) */
 .gridjs-wrapper {
-    flex-grow: 1 !important; /* Take remaining vertical space */
-    overflow: auto !important; /* Enable scrolling */
-    position: relative !important; /* Basic positioning */
+    flex-grow: 1 !important;
+    overflow: auto !important; /* Managed by main.css now for hiding */
+    position: relative !important;
     background-color: black !important;
     border: none !important;
     border-radius: 0 !important;
     width: 100%;
-    min-height: 0 !important; /* Prevent flex blowout */
+    min-height: 0 !important;
     z-index: 0;
     /* Height is set dynamically via JavaScript */
 }
 
-/* Table */
+/* Table (Unchanged) */
 table.gridjs-table {
   border-collapse: collapse;
   text-align: left;
   width: 100%;
   table-layout: fixed;
-  /* height: auto !important; */ /* Removed */
 }
 
-/* TH styles - Keep sticky */
+/* TH styles - Keep sticky (Unchanged) */
 th.gridjs-th {
   background-color: #1a1a1a; color: #eee; border: none; border-right: 1px solid #333;
   border-bottom: 1px solid #555; padding: 8px 10px; font-weight: bold;
@@ -113,89 +112,84 @@ th.gridjs-th .gridjs-th-content {
     width: 100%;
 }
 
-/* Sort Indicator Styles - Background Image Override */
+/* Sort Indicator Styles - Background Image Override (Unchanged) */
 th.gridjs-th-sort { cursor: pointer; position: relative; padding-right: 25px !important; }
 th.gridjs-th-sort:focus,
 th.gridjs-th-sort:hover { background-color: #333 !important; }
-/* Style the button containing the sort icon */
 button.gridjs-sort {
     background-color: transparent !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
-    background-size: 10px 10px !important; /* Adjust size */
-    border: none !important; cursor: pointer; float: right; height: 100% !important; /* Use height 100% */
+    background-size: 10px 10px !important;
+    border: none !important; cursor: pointer; float: right; height: 100% !important;
     margin: 0 !important; outline: none !important; padding: 0 !important;
-    width: 13px !important; /* Adjust width */
+    width: 13px !important;
     opacity: 0.6 !important;
     transition: opacity 0.15s ease-in-out !important;
-    position: absolute; /* Position it within the TH */
+    position: absolute;
     right: 8px;
     top: 0;
 }
 button.gridjs-sort:hover { opacity: 1 !important; }
-/* White SVG arrow for neutral state (optional, often hidden) */
 button.gridjs-sort-neutral {
      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='white'%3E%3Cpath d='M5 0L0 5h10zM5 10L0 5h10z'/%3E%3C/svg%3E") !important;
      opacity: 0.3 !important;
 }
-/* White SVG arrow for ascending */
 button.gridjs-sort-asc {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='white'%3E%3Cpath d='M5 0L0 5h10z'/%3E%3C/svg%3E") !important;
     opacity: 1 !important;
 }
-/* White SVG arrow for descending */
 button.gridjs-sort-desc {
      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='white'%3E%3Cpath d='M5 10L0 5h10z'/%3E%3C/svg%3E") !important;
      opacity: 1 !important;
 }
 
 
-/* Resizer Styles */
+/* Resizer Styles (Unchanged) */
 .gridjs-resizable {
     position: absolute !important;
     top: 0;
     bottom: 0;
-    right: -5px; /* Position slightly outside the cell border */
-    width: 10px; /* Wider clickable area */
+    right: -5px;
+    width: 10px;
     cursor: ew-resize;
-    z-index: 3 !important; /* Above other header content */
+    z-index: 3 !important;
 }
 .gridjs-resizable:hover {
-    background-color: rgba(100, 100, 255, 0.5) !important; /* Visual feedback on hover */
+    background-color: rgba(100, 100, 255, 0.5) !important;
 }
 
-/* Table Body & Cells */
-.gridjs-tbody { background-color: black; z-index: 0; } /* Dark theme */
+/* Table Body & Cells (Unchanged) */
+.gridjs-tbody { background-color: black; z-index: 0; }
 .gridjs-tr { border: none; }
-.gridjs-tr:nth-child(odd) td.gridjs-td { background-color: black; } /* Dark theme */
-.gridjs-tr:nth-child(even) td.gridjs-td { background-color: #111; } /* Dark theme */
+.gridjs-tr:nth-child(odd) td.gridjs-td { background-color: black; }
+.gridjs-tr:nth-child(even) td.gridjs-td { background-color: #111; }
 
 td.gridjs-td {
     color: #ddd;
     padding: 4px 10px;
     border: none;
-    border-bottom: 1px dotted #444; /* Custom border */
+    border-bottom: 1px dotted #444;
     line-height: 1.5;
     white-space: normal;
-    overflow: hidden; /* Prevent content spill */
+    overflow: hidden;
     overflow-wrap: break-word;
     word-break: break-word;
     box-sizing: border-box;
-    vertical-align: top; /* Align content to top */
+    vertical-align: top;
  }
 
- /* Style for the value part of the cell */
+ /* Style for the value part of the cell (Unchanged) */
  .cell-value {
-     display: inline; /* Allow sparkline to sit next to it */
-     margin-right: 5px; /* Space before sparkline */
-     /* Add max-width / overflow / ellipsis here if you want truncation */
+     display: inline;
+     margin-right: 5px;
  }
 
- /* Style for messages like 'Loading...' or 'No data' */
+ /* Style for messages like 'Loading...' or 'No data' (Unchanged) */
  td.gridjs-message {
-   text-align: center;
-   padding: 15px;
-   color: #aaa;
-   background-color: black;
-   display: table-cell !important; /* Ensure it spans correctly */
+    text-align: center;
+    padding: 15px;
+    color: #aaa;
+    background-color: black;
+    display: table-cell !important;
  }

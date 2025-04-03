@@ -4,18 +4,17 @@
 :root {
   /* CSS Variables */
   --gridjs-header-height: 40px; /* Height of the Grid.js header (.gridjs-head) */
-  --controls-area-height-estimate: 40px; /* Estimated height of #controls-area */
+  /* --controls-area-height-estimate: 45px; -- REMOVED, no longer needed */
   --gridjs-footer-height: 5px;
   --gridjs-minimap-width: 15px;
-  --gridjs-minimap-gap: 5px; /* Increased gap slightly */
-  /* Padding variable for grid container */
+  --gridjs-minimap-gap: 5px;
   --grid-padding-right: calc(var(--gridjs-minimap-width) + var(--gridjs-minimap-gap));
   --link-color-default: #9bf;
   --link-color-visited: #a9d;
   --link-color-hover: #bff;
   --sparkline-bar-filled: #8af;
   --sparkline-bar-empty: #555;
-  --minimap-thumb-color: rgba(150, 150, 150, 0.7); /* Color for the scroll thumb */
+  --minimap-thumb-color: rgba(150, 150, 150, 0.7);
 }
 
 /* Base container - Flex column, relative for minimap */
@@ -30,47 +29,10 @@
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
-  /* Padding removed from here */
 }
 
-/* Controls area - Stays fixed at top */
-#controls-area {
-  position: relative;
-  z-index: 5; /* Lower z-index than grid header */
-  background-color: #1c1c1c;
-  padding: 5px 8px;
-  /* border-bottom: 1px solid #444; -- REMOVED BORDER */
-  flex-shrink: 0;
-  min-height: 35px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  flex-wrap: wrap; /* Allow wrapping if needed */
-  box-sizing: border-box;
-}
-/* Styles for controls area label */
-#controls-area label {
-  color: #aaa;
-  font-size: 0.9em;
-  margin-right: 5px;
-}
-/* Styles for controls area text input */
-#controls-area input[type="text"] {
-  background-color: #2a2a2a;
-  border: 1px solid #444;
-  color: #ddd;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 13px;
-  line-height: 1.4;
-  box-sizing: border-box;
-}
-/* Styles for focused text input in controls */
-#controls-area input[type="text"]:focus {
-  border-color: #66f; /* Highlight focus */
-  box-shadow: 0 0 0 2px rgba(100, 100, 255, 0.3); /* Subtle focus ring */
-  outline: none;
-}
+/* --- REMOVED #controls-area styles --- */
+
 
 /* Content Area - Takes remaining space */
 #content-area {
@@ -87,7 +49,7 @@
 /* Grid Container - Flex column, takes available space */
 #gridjs-container {
     flex-grow: 1;
-    position: relative; /* Context for wrapper */
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -95,31 +57,27 @@
     box-sizing: border-box;
     overflow: hidden;
     background-color: black;
- /* --- ADDED PADDING --- */
-    /* Add padding to inset the grid from the minimap */
     padding-right: var(--grid-padding-right);
- /* --- END ADDED PADDING --- */
 }
 
 /* Minimap Styles - Absolute relative to log-viewer-container */
 #gridjs-minimap {
     position: absolute;
-    /* --- Adjusted top calculation to precisely align below controls + grid header --- */
-    top: calc(var(--controls-area-height-estimate) + var(--gridjs-header-height));
-    bottom: 0; /* Stretch to the bottom */
-    right: 0;  /* Align to absolute right edge */
+    /* --- Align top with the bottom of the grid header --- */
+    top: var(--gridjs-header-height);
+    bottom: 0;
+    right: 0;
     width: var(--gridjs-minimap-width);
-    background-color: #333; /* Slightly lighter background */
+    background-color: #333;
     overflow: hidden;
     box-shadow: inset 2px 0 5px -2px rgba(0,0,0,0.5);
-    z-index: 11; /* Ensure it's above controls/header/grid */
+    z-index: 11;
     box-sizing: border-box;
     cursor: grab;
 }
 #gridjs-minimap.grabbing {
-    cursor: grabbing !important; /* Cursor while dragging */
+    cursor: grabbing !important;
 }
-
 /* Minimap Thumb */
 #gridjs-minimap-thumb {
     position: absolute;
@@ -127,38 +85,34 @@
     right: 1px;
     background-color: var(--minimap-thumb-color);
     border-radius: 3px;
-    opacity: 0; /* Initially hidden, shown by JS */
-    transition: opacity 0.2s ease-in-out; /* Fade effect */
-    pointer-events: none; /* Don't interfere with dragging minimap */
-    z-index: 1; /* Above markers */
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    pointer-events: none;
+    z-index: 1;
 }
 #gridjs-minimap:hover #gridjs-minimap-thumb {
-    opacity: 1; /* Show thumb on minimap hover */
+    opacity: 1;
 }
-
 /* Individual markers on the minimap */
 .minimap-marker {
     position: absolute;
     left: 1px;
     right: 1px;
     height: 2px;
-    background-color: rgba(255, 215, 0, 0.6); /* Highlight color */
+    background-color: rgba(255, 215, 0, 0.6);
     pointer-events: none;
     border-radius: 1px;
-    z-index: 0; /* Below thumb */
+    z-index: 0;
 }
 
 /* --- HIDE DEFAULT SCROLLBARS --- */
-/* Hide scrollbar for Webkit browsers */
 .gridjs-wrapper::-webkit-scrollbar {
     display: none;
 }
-
-/* Hide scrollbar for Firefox */
 .gridjs-wrapper {
     scrollbar-width: none;
-    /* --- Ensure overflow is handled correctly for scrolling --- */
-    overflow: scroll !important; /* Force scroll even if hidden */
-    -ms-overflow-style: none; /* IE and Edge */
+    overflow: scroll !important;
+    -ms-overflow-style: none;
 }
 /* --- END HIDE DEFAULT SCROLLBARS --- */
+

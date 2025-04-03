@@ -1,5 +1,5 @@
 // src/ui/dom.ts
-import { elements } from '../core/state'; // Use relative path
+import { elements } from '../core/state';
 
 /**
  * Sets up the basic HTML structure for the visualization.
@@ -7,15 +7,12 @@ import { elements } from '../core/state'; // Use relative path
  * @param visElement - The HTMLElement provided by Looker.
  */
 export function setupHTML(visElement: HTMLElement): void {
-    console.log("Setting up base HTML structure.");
+    console.log("Setting up base HTML structure (Controls merged into header).");
 
+    // REMOVED #controls-area. Highlight input will be added dynamically.
     // Added #gridjs-minimap-thumb inside #gridjs-minimap
     const htmlContent = `
         <div class="log-viewer-container">
-            <div id="controls-area">
-                <label for="highlight-input">Highlight:</label>
-                <input type="text" id="highlight-input" placeholder="Highlight text..." />
-                </div>
             <div id="content-area">
                 <div id="gridjs-container">
                     </div>
@@ -25,18 +22,17 @@ export function setupHTML(visElement: HTMLElement): void {
                 </div>
             </div>
     `;
-    // Set innerHTML ONCE
-    visElement.innerHTML = htmlContent;
 
-    // Store reference to the main element, defer finding children
+    visElement.innerHTML = htmlContent;
     elements.visElement = visElement;
-    console.log("setupHTML: Base HTML structure set.");
+    console.log("setupHTML: Base HTML structure set (No separate controls area).");
 }
 
 /**
  * Finds and stores references to important DOM elements.
+ * Note: highlightInput might be null initially if called before dynamic addition.
  * @param visElement - The root HTMLElement of the visualization.
- * @returns True if all critical elements were found, false otherwise.
+ * @returns True if grid container and minimap container are found, false otherwise.
  */
 export function findElements(visElement: HTMLElement): boolean {
     console.log("findElements: Attempting to find elements...");
@@ -46,34 +42,30 @@ export function findElements(visElement: HTMLElement): boolean {
         return false;
     }
 
-    // Find key elements and store references in the shared 'elements' object
     elements.gridJsContainer = baseElement.querySelector<HTMLElement>("#gridjs-container");
-    elements.highlightInput = baseElement.querySelector<HTMLInputElement>("#highlight-input");
     elements.minimapContainer = baseElement.querySelector<HTMLElement>("#gridjs-minimap");
-    // --- Find the minimap thumb element ---
     elements.minimapThumb = baseElement.querySelector<HTMLElement>("#gridjs-minimap-thumb");
+    // Find highlight input - might be added later dynamically
+    elements.highlightInput = baseElement.querySelector<HTMLInputElement>("#highlight-input");
 
-    // Verify that critical elements were found
-    const criticalElementsFound = !!elements.gridJsContainer && !!elements.highlightInput && !!elements.minimapContainer; // Thumb is not 'critical' for basic function
+    // Critical elements are the grid and minimap containers for basic layout
+    const criticalElementsFound = !!elements.gridJsContainer && !!elements.minimapContainer;
 
     if (!criticalElementsFound) {
-        console.error("findElements: One or more critical elements could not be found.");
+        console.error("findElements: Grid or Minimap container could not be found.");
         if (!elements.gridJsContainer) console.error("... #gridjs-container is missing");
-        if (!elements.highlightInput) console.error("... #highlight-input is missing");
         if (!elements.minimapContainer) console.error("... #gridjs-minimap is missing");
-        console.log("Parent structure for debugging:", baseElement.innerHTML);
     } else {
-        console.log("findElements: All critical elements found.");
-    }
-    // Check specifically for thumb, but don't fail if missing initially
-    if (!elements.minimapThumb) {
-        console.warn("findElements: #gridjs-minimap-thumb element not found. Thumb functionality will be disabled.");
+        console.log("findElements: Core layout elements found.");
+        // Log warnings if optional/dynamic elements are missing at this stage
+        if (!elements.highlightInput) console.warn("findElements: #highlight-input not found (may be added dynamically).");
+        if (!elements.minimapThumb) console.warn("findElements: #gridjs-minimap-thumb not found.");
     }
 
-    return criticalElementsFound;
+    return criticalElementsFound; // Return true if core layout is present
 }
 
-// Function to get the scroll wrapper (remains the same)
+// Function to get the scroll wrapper
 export function getScrollWrapper(): HTMLElement | null {
     if (!elements.gridJsContainer) {
         console.warn("getScrollWrapper: gridJsContainer not found");
@@ -81,4 +73,3 @@ export function getScrollWrapper(): HTMLElement | null {
     }
     return elements.gridJsContainer.querySelector<HTMLElement>(".gridjs-wrapper");
 }
-
