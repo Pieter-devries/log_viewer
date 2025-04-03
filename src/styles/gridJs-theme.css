@@ -7,26 +7,24 @@
   flex-shrink: 0;
   height: var(--gridjs-header-height);
   position: relative;
-  z-index: 6; /* Ensure it's above grid content, potentially adjust if needed */
-  /* border-bottom: 1px solid #555; -- Keep this border to separate from grid */
-  border-bottom: 1px solid #444; /* Match previous controls border color */
+  z-index: 6;
+  border-bottom: 1px solid #444; /* Separator line */
   box-sizing: border-box;
-  padding: 5px 8px;
-  background-color: #1a1a1a; /* Keep consistent background */
+  /* --- Reduced Padding --- */
+  padding: 1px 5px; /* Reduced vertical and horizontal padding */
+  background-color: #1a1a1a; /* Consistent background */
   color: #eee;
   overflow: hidden;
-  /* --- Ensure Flex Layout --- */
   display: flex;
   align-items: center;
-  gap: 15px; /* Space between items */
-  flex-wrap: wrap; /* Allow wrapping */
+  gap: 10px; /* Slightly reduced gap */
+  flex-wrap: wrap;
 }
 
 .gridjs-search {
-  /* No float needed */
-  /* margin-right: 15px; -- Gap handles spacing */
-  /* Adjust flex properties if needed for fine-tuning */
-  /* e.g., order: 2; if you want highlight first */
+  /* Adjustments might be needed depending on how Grid.js renders search */
+  display: flex; /* Ensure search container itself is flex if needed */
+  align-items: center;
 }
 
 /* Style for search input */
@@ -35,11 +33,13 @@ input.gridjs-input.gridjs-search-input {
   border: 1px solid #444;
   color: #ddd;
   border-radius: 4px;
-  padding: 4px 8px;
+  /* --- Reduced Padding --- */
+  padding: 1px 5px;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.4; /* Keep line-height for readability */
   box-sizing: border-box;
   width: 200px; /* Example width */
+  margin-left: 5px; /* Add space after "Search:" label */
 }
 input.gridjs-input.gridjs-search-input:focus {
     border-color: #66f;
@@ -47,7 +47,7 @@ input.gridjs-input.gridjs-search-input:focus {
     outline: none;
 }
 
-/* Footer - Fixed height (Unchanged) */
+/* Footer - Fixed height */
 .gridjs-footer {
     flex-shrink: 0;
     height: var(--gridjs-footer-height);
@@ -56,7 +56,8 @@ input.gridjs-input.gridjs-search-input:focus {
     background-color: #1c1c1c;
     border-top: 1px solid #555;
     box-shadow: none;
-    padding: 5px 10px;
+    /* --- Reduced Padding --- */
+    padding: 1px 5px;
     color: #aaa;
     box-sizing: border-box;
 }
@@ -72,10 +73,10 @@ input.gridjs-input.gridjs-search-input:focus {
     display: none;
 }
 
-/* Wrapper - Flex grow, scrolls, height set by JS (Unchanged) */
+/* Wrapper */
 .gridjs-wrapper {
     flex-grow: 1 !important;
-    overflow: auto !important; /* Managed by main.css now for hiding */
+    /* overflow: auto !important; -- Managed by main.css */
     position: relative !important;
     background-color: black !important;
     border: none !important;
@@ -83,10 +84,9 @@ input.gridjs-input.gridjs-search-input:focus {
     width: 100%;
     min-height: 0 !important;
     z-index: 0;
-    /* Height is set dynamically via JavaScript */
 }
 
-/* Table (Unchanged) */
+/* Table */
 table.gridjs-table {
   border-collapse: collapse;
   text-align: left;
@@ -94,13 +94,14 @@ table.gridjs-table {
   table-layout: fixed;
 }
 
-/* TH styles - Keep sticky (Unchanged) */
+/* TH styles - Keep sticky */
 th.gridjs-th {
   background-color: #1a1a1a; color: #eee; border: none; border-right: 1px solid #333;
-  border-bottom: 1px solid #555; padding: 8px 10px; font-weight: bold;
+  /* --- Reduced Padding --- */
+  border-bottom: 1px solid #555; padding: 1px 5px; font-weight: bold;
   text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   position: sticky !important;
-  top: 0 !important; /* Stick to top of .gridjs-wrapper */
+  top: 0 !important;
   z-index: 2 !important;
   box-sizing: border-box; vertical-align: middle; user-select: none;
 }
@@ -112,8 +113,13 @@ th.gridjs-th .gridjs-th-content {
     width: 100%;
 }
 
-/* Sort Indicator Styles - Background Image Override (Unchanged) */
-th.gridjs-th-sort { cursor: pointer; position: relative; padding-right: 25px !important; }
+/* Sort Indicator Styles - Adjust padding/position */
+th.gridjs-th-sort {
+    cursor: pointer;
+    position: relative;
+    /* --- Adjust right padding for sort icon --- */
+    padding-right: 18px !important;
+}
 th.gridjs-th-sort:focus,
 th.gridjs-th-sort:hover { background-color: #333 !important; }
 button.gridjs-sort {
@@ -127,7 +133,8 @@ button.gridjs-sort {
     opacity: 0.6 !important;
     transition: opacity 0.15s ease-in-out !important;
     position: absolute;
-    right: 8px;
+    /* --- Adjust position due to padding change --- */
+    right: 2px;
     top: 0;
 }
 button.gridjs-sort:hover { opacity: 1 !important; }
@@ -145,7 +152,7 @@ button.gridjs-sort-desc {
 }
 
 
-/* Resizer Styles (Unchanged) */
+/* Resizer Styles */
 .gridjs-resizable {
     position: absolute !important;
     top: 0;
@@ -159,7 +166,7 @@ button.gridjs-sort-desc {
     background-color: rgba(100, 100, 255, 0.5) !important;
 }
 
-/* Table Body & Cells (Unchanged) */
+/* Table Body & Cells */
 .gridjs-tbody { background-color: black; z-index: 0; }
 .gridjs-tr { border: none; }
 .gridjs-tr:nth-child(odd) td.gridjs-td { background-color: black; }
@@ -167,10 +174,11 @@ button.gridjs-sort-desc {
 
 td.gridjs-td {
     color: #ddd;
-    padding: 4px 10px;
+    /* --- Reduced Padding --- */
+    padding: 1px 5px;
     border: none;
     border-bottom: 1px dotted #444;
-    line-height: 1.5;
+    line-height: 1.5; /* Keep line-height */
     white-space: normal;
     overflow: hidden;
     overflow-wrap: break-word;
@@ -179,16 +187,16 @@ td.gridjs-td {
     vertical-align: top;
  }
 
- /* Style for the value part of the cell (Unchanged) */
+ /* Style for the value part of the cell */
  .cell-value {
      display: inline;
      margin-right: 5px;
  }
 
- /* Style for messages like 'Loading...' or 'No data' (Unchanged) */
+ /* Style for messages like 'Loading...' or 'No data' */
  td.gridjs-message {
     text-align: center;
-    padding: 15px;
+    padding: 15px; /* Keep message padding reasonable */
     color: #aaa;
     background-color: black;
     display: table-cell !important;
