@@ -2,41 +2,39 @@
 /* Contains custom overrides and theming for Grid.js elements */
 /* Uses flexbox for wrapper and JS height calculation */
 
-/* Header - Now contains both search and highlight */
+/* Header */
 .gridjs-head {
   flex-shrink: 0;
-  height: var(--gridjs-header-height); /* Uses CSS variable */
+  min-height: var(--gridjs-header-height); /* Use min-height to allow wrapping */
+  height: auto; /* Allow auto height based on content */
   position: relative;
   z-index: 6;
-  border-bottom: 1px solid #444; /* Keep separator */
+  border-bottom: 1px solid #444;
   box-sizing: border-box;
-  padding: 5px 8px; /* Restored padding */
+  padding: 2px 5px; 
   background-color: #1a1a1a;
   color: #eee;
-  overflow: hidden; /* Prevent content spill if wrapping */
+  overflow: hidden;
   display: flex;
   align-items: center;
-  gap: 15px; /* Restored gap */
-  flex-wrap: wrap; /* Allow wrapping */
+  gap: 10px; 
+  flex-wrap: wrap;
 }
 
-.gridjs-search {
-  display: flex;
-  align-items: center;
-}
+/* Search Container/Input */
+.gridjs-search { display: flex; align-items: center; }
 
-/* Style for search input */
 input.gridjs-input.gridjs-search-input {
   background-color: #2a2a2a;
   border: 1px solid #444;
   color: #ddd;
-  border-radius: 4px;
-  padding: 4px 8px; /* Restored padding */
-  font-size: 13px;
-  line-height: 1.4;
+  border-radius: 3px; /* Slightly smaller radius */
+  padding: 2px 5px; /* Reduced padding */
+  font-size: 12px; /* Match base font */
+  line-height: 1.3; /* Reduced line-height */
   box-sizing: border-box;
-  width: 200px;
-  margin-left: 5px; /* Space after "Search:" label */
+  width: 180px; /* Slightly smaller width */
+  margin-left: 3px; /* Reduced margin */
 }
 
 input.gridjs-input.gridjs-search-input:focus {
@@ -54,7 +52,7 @@ input.gridjs-input.gridjs-search-input:focus {
     background-color: #1c1c1c;
     border-top: 1px solid #555;
     box-shadow: none;
-    padding: 5px 10px; /* Restored padding */
+    padding: 1px 5px; /* Restored padding */
     color: #aaa;
     box-sizing: border-box;
 }
@@ -92,14 +90,14 @@ table.gridjs-table {
   table-layout: fixed;
 }
 
-/* TH styles - Keep sticky */
+/* TH styles */
 th.gridjs-th {
   background-color: #1a1a1a; color: #eee; border: none; border-right: 1px solid #333;
-  border-bottom: 1px solid #555; padding: 8px 10px; font-weight: bold; /* Restored padding */
+  border-bottom: 1px solid #555;
+  padding: 2px 8px; /* Reduced vertical padding */
+  font-weight: bold;
   text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 2 !important;
+  position: sticky !important; top: 0 !important; z-index: 2 !important;
   box-sizing: border-box; vertical-align: middle; user-select: none;
 }
 th.gridjs-th:last-child { border-right: none; }
@@ -114,7 +112,7 @@ th.gridjs-th .gridjs-th-content {
 th.gridjs-th-sort {
     cursor: pointer;
     position: relative;
-    padding-right: 25px !important;
+    padding-right: 18px !important;
 }
 th.gridjs-th-sort:focus,
 th.gridjs-th-sort:hover { background-color: #333 !important; }
@@ -129,7 +127,7 @@ button.gridjs-sort {
     opacity: 0.6 !important;
     transition: opacity 0.15s ease-in-out !important;
     position: absolute;
-    right: 8px; /* Restored position */
+    right: 3px;
     top: 0;
 }
 button.gridjs-sort:hover { opacity: 1 !important; }
@@ -158,10 +156,10 @@ button.gridjs-sort-desc {
 
 td.gridjs-td {
     color: #ddd;
-    padding: 4px 10px; /* Restored padding */
+    padding: 1px 8px; /* Restored padding */
     border: none;
     border-bottom: 1px dotted #444;
-    line-height: 1.5;
+    line-height: 1.3;
     white-space: normal;
     overflow: hidden;
     overflow-wrap: break-word;
@@ -179,7 +177,7 @@ td.gridjs-td {
  /* Style for messages */
  td.gridjs-message {
     text-align: center;
-    padding: 15px;
+    padding: 10px;
     color: #aaa;
     background-color: black;
     display: table-cell !important;

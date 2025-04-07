@@ -21,46 +21,60 @@ export function addControlsToHeader(visElement: HTMLElement): boolean {
 
     // --- 1. Add Search Label ---
     const searchContainer = gridHead.querySelector<HTMLElement>('.gridjs-search');
-    const searchInput = gridHead.querySelector<HTMLInputElement>('.gridjs-search-input'); // Find the actual input
-    const searchLabelId = 'gridjs-search-label'; // Use an ID for the label
+    const searchInput = gridHead.querySelector<HTMLInputElement>('.gridjs-search-input');
+    const searchLabelId = 'gridjs-search-label';
 
-    if (searchContainer && !gridHead.querySelector(`#${searchLabelId}`)) {
-        const searchLabel = document.createElement('label');
-        searchLabel.id = searchLabelId; // Assign ID
+    let searchLabel = gridHead.querySelector<HTMLLabelElement>(`#${searchLabelId}`);
+    if (searchContainer && !searchLabel) {
+        searchLabel = document.createElement('label');
+        searchLabel.id = searchLabelId;
         if (searchInput) {
-            // Try to associate label with input if possible (Grid.js might not assign an ID)
-            if (!searchInput.id) searchInput.id = 'gridjs-search-input-dynamic'; // Assign dynamic ID if none exists
+            if (!searchInput.id) searchInput.id = 'gridjs-search-input-dynamic';
             searchLabel.htmlFor = searchInput.id;
         }
         searchLabel.textContent = 'Search:';
         searchLabel.style.color = '#aaa';
-        searchLabel.style.fontSize = '0.9em';
-        searchLabel.style.marginRight = '5px';
+        searchLabel.style.fontSize = '11px'; // Smaller font
+        searchLabel.style.marginRight = '3px'; // Reduced margin
         searchContainer.parentNode?.insertBefore(searchLabel, searchContainer);
         console.log("Dynamically added Search label.");
-    } else if (searchContainer && gridHead.querySelector(`#${searchLabelId}`)) {
-        console.log("Search label already exists.");
-    } else {
-        console.warn("addControlsToHeader: .gridjs-search container not found. Cannot add Search label.");
+    } else if (searchLabel) {
+        // Update existing label style if needed
+        searchLabel.style.fontSize = '11px';
+        searchLabel.style.marginRight = '3px';
     }
+    // --- End Search Label ---
 
     // --- 2. Add/Update Highlight Controls ---
     let highlightInput = gridHead.querySelector<HTMLInputElement>('#highlight-input');
-    if (highlightInput) {
+    let highlightLabel = gridHead.querySelector<HTMLLabelElement>('label[for="highlight-input"]');
+
+    if (highlightInput && highlightLabel) {
         console.log("Highlight controls already exist in header.");
-        // Ensure the value is up-to-date
         if (highlightInput.value !== state.highlightTerm) {
             highlightInput.value = state.highlightTerm || '';
         }
+        // Update styles for tighter fit
+        highlightLabel.style.fontSize = '11px';
+        highlightLabel.style.marginRight = '3px';
+        highlightLabel.style.marginLeft = '10px'; // Reduced margin
+        highlightInput.style.padding = '2px 5px'; // Reduced padding
+        highlightInput.style.fontSize = '12px';
+        highlightInput.style.lineHeight = '1.3';
+
     } else {
+        // Remove potentially orphaned elements if one exists but not the other
+        if (highlightInput) highlightInput.remove();
+        if (highlightLabel) highlightLabel.remove();
+
         // Create Label
-        const highlightLabel = document.createElement('label');
+        highlightLabel = document.createElement('label');
         highlightLabel.htmlFor = 'highlight-input';
         highlightLabel.textContent = 'Highlight:';
         highlightLabel.style.color = '#aaa';
-        highlightLabel.style.fontSize = '0.9em';
-        highlightLabel.style.marginRight = '5px';
-        highlightLabel.style.marginLeft = '15px'; // Space before highlight
+        highlightLabel.style.fontSize = '11px'; // Smaller font
+        highlightLabel.style.marginRight = '3px'; // Reduced margin
+        highlightLabel.style.marginLeft = '10px'; // Reduced margin
 
         // Create Input
         highlightInput = document.createElement('input');
@@ -70,10 +84,10 @@ export function addControlsToHeader(visElement: HTMLElement): boolean {
         highlightInput.style.backgroundColor = '#2a2a2a';
         highlightInput.style.border = '1px solid #444';
         highlightInput.style.color = '#ddd';
-        highlightInput.style.borderRadius = '4px';
-        highlightInput.style.padding = '1px 5px'; // Use reduced padding
-        highlightInput.style.fontSize = '13px';
-        highlightInput.style.lineHeight = '1.4';
+        highlightInput.style.borderRadius = '3px'; // Slightly smaller radius
+        highlightInput.style.padding = '2px 5px'; // Reduced padding
+        highlightInput.style.fontSize = '12px'; // Match base font
+        highlightInput.style.lineHeight = '1.3'; // Reduced line-height
         highlightInput.style.boxSizing = 'border-box';
         highlightInput.value = state.highlightTerm || '';
 
@@ -82,5 +96,5 @@ export function addControlsToHeader(visElement: HTMLElement): boolean {
         gridHead.appendChild(highlightInput);
         console.log("Dynamically added Highlight controls to .gridjs-head.");
     }
-    return true; // Indicate success
+    return true;
 }
