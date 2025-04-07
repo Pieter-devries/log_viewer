@@ -20,34 +20,30 @@ export function getGridJsOptions(
 
     // Process columns to add resizable: true to each one
     const processedColumns = (inputColumns || []).map(col => {
-        let columnDef: any = {}; // Using 'any', consider a specific ColumnDef type
+        let columnDef: any = {};
 
-        // Handle case where columns might just be strings (names)
         if (typeof col === 'string') {
             columnDef = { name: col };
         } else if (typeof col === 'object' && col !== null) {
-            columnDef = { ...col }; // Copy existing properties from object
+            columnDef = { ...col };
         } else {
             console.warn("Unexpected column format:", col);
-            // Fallback or skip? For now, create a minimal object.
             columnDef = { name: 'unknown' };
         }
 
-        // --- Apply resizable: true to each column ---
-        columnDef.resizable = true;
-        // -------------------------------------------
+        // Apply resizable: true if it's not explicitly set to false
+        if (columnDef.resizable !== false) {
+            columnDef.resizable = true;
+            // --- REMOVED explicit minWidth override ---
+            // columnDef.minWidth = '50px';
+        }
 
-        // Optional: Ensure an ID exists if needed (useful for state/API interactions)
-        // if (!columnDef.id && columnDef.name && typeof columnDef.name === 'string') {
-        //     columnDef.id = columnDef.name.toLowerCase().replace(/\s+/g, '_');
-        // }
+        if (!columnDef.name) {
+            columnDef.name = columnDef.id || 'Unnamed Column';
+        }
 
         return columnDef;
     });
-
-    // The shouldClearGrid logic is removed, assuming create/updateAsync handle
-    // providing empty vs. populated arrays appropriately.
-
     // Return the Grid.js options object
     return {
         columns: processedColumns, // Use the processed columns array
@@ -55,7 +51,7 @@ export function getGridJsOptions(
         sort: { multiColumn: true }, // Keep user's sort config
         search: true, // Keep search enabled
         language: { 'search': { 'placeholder': 'Filter value...' } }, // Keep custom placeholder
-        resizable: true, // REMOVED top-level resizable
+        // resizable: true, // REMOVED top-level resizable
         fixedHeader: true, // Keep fixed header
         pagination: false, // Keep pagination disabled
         // autoHeight: false, // Keep autoHeight disabled (Note: Grid.js might manage height differently)

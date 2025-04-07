@@ -68,12 +68,12 @@ export function updateMinimapMarkers(): void {
     if (!tableBody) return;
 
     const scrollHeight = gridWrapper.scrollHeight;
-    const clientHeight = gridWrapper.clientHeight;
+    // const clientHeight = gridWrapper.clientHeight;
     const minimapHeight = minimapContainer.offsetHeight;
 
     // console.log(`updateMinimapMarkers - Scroll Heights: scrollH=${scrollHeight}, clientH=${clientHeight}`);
 
-    if (scrollHeight <= clientHeight || minimapHeight <= 0) { return; } // No scroll or no minimap height
+    if (minimapHeight <= 0) { return; } // No minimap height means we can't draw
 
     const highlightedMarks = gridWrapper.querySelectorAll('mark.gridjs-highlight');
     if (highlightedMarks.length === 0) { return; } // No highlights
@@ -89,7 +89,10 @@ export function updateMinimapMarkers(): void {
         processedRows.add(row);
 
         // Calculate row's position relative to the wrapper's scrollable content
-        const rowOffsetTop = row.offsetTop + tableBody.offsetTop; // Offset within wrapper
+
+        const rowOffsetTop = row.offsetTop + tableBody.offsetTop;
+        // Use scrollHeight for positioning, even if not scrollable,
+        // to represent relative position within the total content.
         const markerTop = (rowOffsetTop / scrollHeight) * minimapHeight;
 
         // Create and add the marker
